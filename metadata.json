@@ -1,0 +1,7 @@
+{
+  "name": "Parkr Valet",
+  "description": "A peer-to-peer parking spot holding service. Find a spot, reserve it, and let a Parker hold it for you. Focused on North Dallas, Plano, and Frisco.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
