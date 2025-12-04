@@ -55,7 +55,10 @@ export enum AppState {
   SELECT_VEHICLE = 'SELECT_VEHICLE', // "Your Car" page
   SELECT_TIER = 'SELECT_TIER', // New Tier Selection Page
   BOOKING_REVIEW = 'BOOKING_REVIEW', // New Review Page
-  WAITING_FOR_PARKER = 'WAITING_FOR_PARKER',
+  PAYMENT_METHODS = 'PAYMENT_METHODS', // Select card/apple pay
+  SEARCHING_PARKER = 'SEARCHING_PARKER', // Loading screen "Finalizing details"
+  WAITING_FOR_PARKER = 'WAITING_FOR_PARKER', // Active Booking Details
+  PROFILE = 'PROFILE', // User Profile
   NAVIGATING = 'NAVIGATING',
   ARRIVED = 'ARRIVED'
 }
