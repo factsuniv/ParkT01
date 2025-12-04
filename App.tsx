@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Map from './components/Map';
 import { Button, SearchInput, LocationItem } from './components/UIComponents';
-import { AppState, Spot, User, SpotStatus, Vehicle, ParkingTier } from './types';
+import { AppState, Spot, User, SpotStatus, Vehicle, ParkingTier, ParkerStatus } from './types';
 import { INITIAL_CENTER, POPULAR_LOCATIONS, MOCK_BUSINESSES, MOCK_SPOTS, MOCK_VEHICLES } from './constants';
 import { supabaseMock } from './services/supabaseMock';
 import { 
@@ -22,7 +22,19 @@ import {
   CircleDollarSign,
   Calendar,
   CreditCard,
-  ArrowRight
+  ArrowRight,
+  Bell,
+  Trophy,
+  Sparkles,
+  Wallet,
+  Info,
+  Megaphone,
+  Lightbulb,
+  MapPin as AddLocation,
+  BarChart,
+  HelpCircle,
+  Home,
+  Newspaper
 } from 'lucide-react';
 
 const PARKING_TIERS: ParkingTier[] = [
@@ -68,6 +80,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'nearby' | 'popular'>('nearby');
   // Navigation for active booking bottom bar
   const [bottomNavTab, setBottomNavTab] = useState<'find' | 'car' | 'history' | 'profile'>('find');
+  
+  // Contractor State
+  const [parkerStatus, setParkerStatus] = useState<ParkerStatus>(ParkerStatus.OFFLINE);
 
   // Initial Data Load
   useEffect(() => {
@@ -87,6 +102,10 @@ const App: React.FC = () => {
       setSpots(MOCK_SPOTS);
     }
     setLoading(false);
+  };
+
+  const handleContractorLogin = () => {
+    setAppState(AppState.CONTRACTOR_DASHBOARD);
   };
 
   const handleSearchFocus = () => {
@@ -197,6 +216,15 @@ const App: React.FC = () => {
       setBottomNavTab(tab);
   };
 
+  // Contractor Helpers
+  const toggleGoLive = () => {
+    if (parkerStatus === ParkerStatus.OFFLINE) {
+        setParkerStatus(ParkerStatus.READY);
+    } else {
+        setParkerStatus(ParkerStatus.OFFLINE);
+    }
+  };
+
   // --- RENDER VIEWS ---
 
   const renderContent = () => {
@@ -255,6 +283,7 @@ const App: React.FC = () => {
               Find a Spot
             </Button>
             <Button 
+              onClick={handleContractorLogin}
               fullWidth 
               className="h-12 text-base font-semibold rounded-xl bg-blue-50 text-brand-600 hover:bg-blue-100 border-none shadow-none"
             >
@@ -267,6 +296,175 @@ const App: React.FC = () => {
           </footer>
         </div>
       );
+    }
+
+    // --- CONTRACTOR DASHBOARD ---
+    if (appState === AppState.CONTRACTOR_DASHBOARD) {
+        return (
+            <div className="h-full w-full bg-[#f8fafc] flex flex-col font-sans overflow-hidden">
+                <header className="flex items-center justify-between p-6 pt-8 bg-white/50 backdrop-blur-md flex-none sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <div 
+                            className="w-10 h-10 rounded-full bg-cover bg-center border border-gray-200 shadow-sm"
+                            style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZOGn8B8EETGrUvzk0_6Im-y21_rPdEo0tuPQBM4DiDbVTnSlAaWlN2pck3HAXdXS1Gy-O4-2DGsKXuEdkgrnvsIoZtEbe0izznjWPIflfnRYLz-zz9FrTEspUVNPyTMl5zHW8aL1KHBGtVJFgQjss8f7Dz1DA04Q4RdnAn1AZFn_zkbjrjYuGdCUXqU9tbvsbv6scrTmsxpdHheWcERyGOLL8iTXlGqlRcy-GzyJ5YZuDj9_KAfpMCm0MjAWhE4IcfM01wxfnMhT3")' }}
+                        />
+                        <div>
+                            <p className="text-xs text-gray-500 font-medium">Welcome back,</p>
+                            <h1 className="text-xl font-bold text-gray-900 leading-tight">Alex Doe</h1>
+                        </div>
+                    </div>
+                    <button className="relative w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors">
+                        <Bell className="w-5 h-5 text-gray-600" />
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+                    </button>
+                </header>
+
+                <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                    {/* Achievement Card */}
+                    <div className="w-full bg-gradient-to-br from-brand-500 to-blue-400 rounded-3xl p-6 text-white shadow-lg shadow-brand-500/20 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8 blur-2xl"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Trophy className="w-6 h-6 text-yellow-300" />
+                                <h2 className="text-xl font-bold">Achievement Path</h2>
+                            </div>
+                            <p className="text-blue-50 text-sm mb-4 font-medium">You're a Gold Parker! Just 5 more spots to Platinum.</p>
+                            
+                            {/* Progress Bar */}
+                            <div className="w-full h-2 bg-black/20 rounded-full mb-1">
+                                <div className="w-[75%] h-full bg-white rounded-full relative">
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow flex items-center justify-center">
+                                        <Sparkles className="w-2 h-2 text-brand-500" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-blue-100 font-medium mb-5">
+                                <span>Gold Parker</span>
+                                <span>Platinum Parker</span>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button className="flex-1 py-2.5 bg-white/20 hover:bg-white/30 rounded-full text-sm font-semibold backdrop-blur-sm transition-colors flex items-center justify-center gap-2">
+                                    View Milestones <ArrowRight className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={toggleGoLive}
+                                    className="px-5 py-2.5 bg-white text-brand-600 hover:bg-blue-50 rounded-full text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {parkerStatus === ParkerStatus.OFFLINE ? 'Go Live' : 'Stop'}
+                                    <span className={`w-2.5 h-2.5 rounded-full ${parkerStatus === ParkerStatus.OFFLINE ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex items-center gap-2 text-gray-500 mb-2">
+                                <Wallet className="w-4 h-4" />
+                                <span className="text-xs font-semibold">Earnings</span>
+                            </div>
+                            <p className="text-2xl font-bold text-brand-600">$1,250.75</p>
+                            <p className="text-[10px] text-gray-400 font-medium">+ $80 this week</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex items-center gap-2 text-gray-500 mb-2">
+                                <Info className="w-4 h-4" />
+                                <span className="text-xs font-semibold">Status</span>
+                            </div>
+                            <p className={`text-2xl font-bold ${
+                                parkerStatus === ParkerStatus.READY ? 'text-green-500' : 
+                                parkerStatus === ParkerStatus.PARKED ? 'text-yellow-500' : 'text-gray-400'
+                            }`}>
+                                {parkerStatus === ParkerStatus.OFFLINE ? 'Offline' : 
+                                 parkerStatus === ParkerStatus.READY ? 'Ready' : 'Parked'}
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-medium">
+                                {parkerStatus === ParkerStatus.OFFLINE ? "Press 'Go Live' to accept" : 
+                                 parkerStatus === ParkerStatus.READY ? "Ready to take requests" : "Currently holding a spot"}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Parker Hub */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-3">Parker Hub</h3>
+                        <div className="space-y-3">
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-brand-600 flex items-center justify-center shrink-0">
+                                    <Megaphone className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900 mb-1">Local Demand Insight</h4>
+                                    <p className="text-xs text-gray-500 leading-relaxed">High demand in Downtown core this weekend! Consider listing your spot.</p>
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-brand-600 flex items-center justify-center shrink-0">
+                                    <Lightbulb className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900 mb-1">Peer Tip: Cleanliness Boosts Ratings</h4>
+                                    <p className="text-xs text-gray-500 leading-relaxed">"A tidy spot always gets me 5-star reviews!" - Sarah P.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tools Grid */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-3">Tools</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                                    <AddLocation className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700">Add New Spot</span>
+                            </button>
+                            <button className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                                    <CreditCard className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700">Pay</span>
+                            </button>
+                            <button className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                                    <BarChart className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700">View Analytics</span>
+                            </button>
+                            <button className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                                    <HelpCircle className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700">Support Center</span>
+                            </button>
+                        </div>
+                    </div>
+                </main>
+
+                {/* Contractor Bottom Nav */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 h-[80px] grid grid-cols-4 items-center justify-items-center z-50 flex-none">
+                     <button className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-600">
+                        <Home className="w-6 h-6 fill-current" />
+                        <span className="text-[10px] font-bold">Home</span>
+                     </button>
+                     <button className="flex h-full w-full flex-col items-center justify-center gap-1 text-gray-400 hover:text-brand-600">
+                        <Car className="w-6 h-6" />
+                        <span className="text-[10px] font-medium">Spots</span>
+                     </button>
+                     <button className="flex h-full w-full flex-col items-center justify-center gap-1 text-gray-400 hover:text-brand-600">
+                        <Newspaper className="w-6 h-6" />
+                        <span className="text-[10px] font-medium">News</span>
+                     </button>
+                     <button className="flex h-full w-full flex-col items-center justify-center gap-1 text-gray-400 hover:text-brand-600">
+                        <UserIcon className="w-6 h-6" />
+                        <span className="text-[10px] font-medium">Account</span>
+                     </button>
+                </div>
+            </div>
+        );
     }
 
     // --- YOUR CAR PAGE ---

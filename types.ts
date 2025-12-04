@@ -47,6 +47,12 @@ export interface ParkingTier {
   color: string;
 }
 
+export enum ParkerStatus {
+  OFFLINE = 'OFFLINE',
+  READY = 'READY',
+  PARKED = 'PARKED'
+}
+
 export enum AppState {
   LOGIN = 'LOGIN',
   MAP_IDLE = 'MAP_IDLE', // Map visible, searching allowed, bottom sheet shows tabs
@@ -60,5 +66,6 @@ export enum AppState {
   WAITING_FOR_PARKER = 'WAITING_FOR_PARKER', // Active Booking Details
   PROFILE = 'PROFILE', // User Profile
   NAVIGATING = 'NAVIGATING',
-  ARRIVED = 'ARRIVED'
+  ARRIVED = 'ARRIVED',
+  CONTRACTOR_DASHBOARD = 'CONTRACTOR_DASHBOARD' // Contractor/Parker Hub
 }
