@@ -45,7 +45,8 @@ import {
   Shield,
   LogOut,
   Pencil,
-  ArrowLeft
+  ArrowLeft,
+  Search
 } from 'lucide-react';
 
 const PARKING_TIERS: ParkingTier[] = [
@@ -722,6 +723,403 @@ const App: React.FC = () => {
     if (appState === AppState.CONTRACTOR_SUPPORT) return renderContractorSubPage('Help Center');
     if (appState === AppState.CONTRACTOR_TERMS) return renderContractorSubPage('Terms of Service');
     if (appState === AppState.CONTRACTOR_PRIVACY) return renderContractorSubPage('Privacy Policy');
+
+    // --- CONSUMER VIEW ---
+    const isConsumer = !appState.toString().startsWith('CONTRACTOR') && appState !== AppState.LOGIN;
+
+    if (isConsumer) {
+      return (
+        <div className="h-full w-full relative flex flex-col font-sans overflow-hidden bg-white">
+          {/* Map Layer - Always present for consumer to maintain state/context */}
+          <div className={`absolute inset-0 z-0 ${appState === AppState.SEARCHING ? 'invisible' : 'visible'}`}>
+             <Map
+               center={center}
+               spots={spots}
+               selectedSpotId={selectedSpot?.id}
+               onSpotClick={handleSpotClick}
+               onMapClick={handleMapClick}
+               isInteracting={appState === AppState.MAP_IDLE}
+             />
+          </div>
+
+          {/* Top Search Bar - Visible in MAP_IDLE */}
+          {appState === AppState.MAP_IDLE && (
+            <div className="absolute top-0 left-0 right-0 p-4 z-10 bg-gradient-to-b from-white/90 to-transparent pb-8">
+               <div className="shadow-lg rounded-xl">
+                 <button
+                   onClick={handleSearchFocus}
+                   className="w-full h-14 bg-white rounded-xl flex items-center px-4 shadow-sm border border-gray-100"
+                 >
+                   <Search className="w-5 h-5 text-gray-400 mr-3" />
+                   <span className="text-gray-500 font-medium text-base">Where to?</span>
+                 </button>
+               </div>
+
+               {/* Quick filters / Tabs */}
+               <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+                 <button className="px-4 py-2 bg-brand-500 text-white rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
+                   Nearby
+                 </button>
+                 <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
+                   Recent
+                 </button>
+                 <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
+                   Cheap
+                 </button>
+               </div>
+            </div>
+          )}
+
+          {/* Searching Overlay */}
+          {appState === AppState.SEARCHING && (
+            <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col">
+              <div className="p-4 bg-white shadow-sm border-b border-gray-100 flex items-center gap-2">
+                 <button onClick={handleBackToMap} className="p-2 -ml-2 text-gray-600 rounded-full hover:bg-gray-100">
+                    <ArrowLeft className="w-6 h-6" />
+                 </button>
+                 <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search destination..."
+                    autoFocus
+                 />
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                 <div className="space-y-2">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Popular Destinations</h3>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                       {POPULAR_LOCATIONS.map((loc, idx) => (
+                          <LocationItem
+                            key={idx}
+                            name={loc.name}
+                            address={loc.address}
+                            onClick={() => handleLocationSelect(loc)}
+                          />
+                       ))}
+                    </div>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Spot Selected Bottom Sheet */}
+          {appState === AppState.SPOT_SELECTED && selectedSpot && (
+             <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 pb-8 animate-in slide-in-from-bottom duration-300">
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+
+                <div className="flex justify-between items-start mb-6">
+                   <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedSpot.location.address}</h2>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">OPEN</span>
+                        <span>•</span>
+                        <span>3 min walk</span>
+                      </div>
+                   </div>
+                   <div className="flex flex-col items-end">
+                      <span className="text-2xl font-bold text-brand-600">${selectedSpot.price}</span>
+                      <span className="text-xs text-gray-400">total</span>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                      <div className="flex items-center gap-2 mb-1 text-gray-500">
+                         <ShieldCheck className="w-4 h-4" />
+                         <span className="text-xs font-bold">Verified</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-tight">Spot verified by community.</p>
+                   </div>
+                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                       <div className="flex items-center gap-2 mb-1 text-gray-500">
+                         <Car className="w-4 h-4" />
+                         <span className="text-xs font-bold">Spacious</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-tight">Fits SUVs and trucks.</p>
+                   </div>
+                </div>
+
+                <Button onClick={handleContinueToCar} fullWidth>
+                   Park Here
+                </Button>
+             </div>
+          )}
+
+          {/* Vehicle Selection */}
+          {appState === AppState.SELECT_VEHICLE && (
+             <div className="absolute inset-0 z-50 bg-white flex flex-col">
+                <header className="flex items-center p-4 border-b border-gray-100">
+                   <button onClick={() => setAppState(AppState.SPOT_SELECTED)} className="p-2 -ml-2 text-gray-600">
+                      <ArrowLeft className="w-6 h-6" />
+                   </button>
+                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Select Vehicle</h1>
+                </header>
+                <div className="p-4 space-y-3">
+                   {MOCK_VEHICLES.map(v => (
+                      <button
+                        key={v.id}
+                        onClick={() => handleVehicleSelection(v.id)}
+                        className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all ${selectedVehicleId === v.id ? 'border-brand-500 bg-brand-50' : 'border-gray-100 bg-white'}`}
+                      >
+                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedVehicleId === v.id ? 'border-brand-500' : 'border-gray-300'}`}>
+                            {selectedVehicleId === v.id && <div className="w-3 h-3 rounded-full bg-brand-500"></div>}
+                         </div>
+                         <div className="text-left">
+                            <p className="font-bold text-gray-900">{v.make} {v.model}</p>
+                            <p className="text-sm text-gray-500">{v.licensePlate}</p>
+                         </div>
+                      </button>
+                   ))}
+
+                   <button className="w-full p-4 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium flex items-center justify-center gap-2 hover:bg-gray-50">
+                      <Plus className="w-5 h-5" /> Add New Vehicle
+                   </button>
+                </div>
+                <div className="mt-auto p-4 border-t border-gray-100">
+                   <Button onClick={handleVehicleConfirm} fullWidth>Continue</Button>
+                </div>
+             </div>
+          )}
+
+          {/* Tier Selection */}
+          {appState === AppState.SELECT_TIER && (
+             <div className="absolute inset-0 z-50 bg-white flex flex-col">
+                <header className="flex items-center p-4 border-b border-gray-100">
+                   <button onClick={() => setAppState(AppState.SELECT_VEHICLE)} className="p-2 -ml-2 text-gray-600">
+                      <ArrowLeft className="w-6 h-6" />
+                   </button>
+                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Choose Tier</h1>
+                </header>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                   {PARKING_TIERS.map(tier => (
+                      <button
+                        key={tier.id}
+                        onClick={() => handleTierSelect(tier)}
+                        className={`w-full p-5 rounded-2xl border-2 flex flex-col gap-3 transition-all relative overflow-hidden ${selectedTier.id === tier.id ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-100 bg-white'}`}
+                      >
+                         <div className="flex justify-between items-start w-full">
+                            <div className="flex items-center gap-3">
+                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedTier.id === tier.id ? 'bg-white' : 'bg-gray-100'}`}>
+                                  {tier.id === 'vip' ? <Award className="w-5 h-5 text-amber-500" /> : <Car className="w-5 h-5 text-gray-600" />}
+                               </div>
+                               <div className="text-left">
+                                  <h3 className={`font-bold text-lg ${tier.color}`}>{tier.name}</h3>
+                               </div>
+                            </div>
+                            <div className="text-right">
+                               <span className="block text-xl font-bold text-gray-900">${tier.price}</span>
+                            </div>
+                         </div>
+                         <p className="text-left text-sm text-gray-600 leading-relaxed">{tier.description}</p>
+                         {selectedTier.id === tier.id && (
+                            <div className="absolute top-0 right-0 p-2 bg-brand-500 rounded-bl-xl text-white">
+                               <Check className="w-4 h-4" />
+                            </div>
+                         )}
+                      </button>
+                   ))}
+                </div>
+                <div className="mt-auto p-4 border-t border-gray-100">
+                   <Button onClick={handleTierContinue} fullWidth>Select {selectedTier.name}</Button>
+                </div>
+             </div>
+          )}
+
+          {/* Booking Review */}
+          {appState === AppState.BOOKING_REVIEW && selectedSpot && (
+             <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col">
+                <header className="flex items-center p-4 bg-white border-b border-gray-100">
+                   <button onClick={() => setAppState(selectedSpot.isVirtual ? AppState.SELECT_TIER : AppState.SELECT_VEHICLE)} className="p-2 -ml-2 text-gray-600">
+                      <ArrowLeft className="w-6 h-6" />
+                   </button>
+                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Review Booking</h1>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                   {/* Summary Card */}
+                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+                         <div className="w-14 h-14 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 shrink-0">
+                            <MapPin className="w-7 h-7" />
+                         </div>
+                         <div>
+                            <h3 className="font-bold text-gray-900 text-lg">{selectedSpot.location.address}</h3>
+                            <p className="text-gray-500 text-sm">Today, 2:00 PM - 4:00 PM</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-3">
+                         <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Vehicle</span>
+                            <span className="font-semibold text-gray-900">{MOCK_VEHICLES.find(v => v.id === selectedVehicleId)?.model}</span>
+                         </div>
+                         {selectedSpot.isVirtual && (
+                            <div className="flex justify-between text-sm">
+                               <span className="text-gray-500">Service Tier</span>
+                               <span className={`font-semibold ${selectedTier.color}`}>{selectedTier.name}</span>
+                            </div>
+                         )}
+                         <div className="flex justify-between text-sm pt-2 border-t border-dashed border-gray-200">
+                            <span className="text-gray-500">Total Price</span>
+                            <span className="font-bold text-gray-900 text-lg">${selectedSpot.isVirtual ? selectedTier.price : selectedSpot.price}</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="bg-blue-50 p-4 rounded-xl flex gap-3 items-start">
+                      <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                      <p className="text-sm text-blue-700 leading-relaxed">
+                         Free cancellation up to 15 mins before arrival. You will only be charged after you park.
+                      </p>
+                   </div>
+                </div>
+
+                <div className="mt-auto p-4 bg-white border-t border-gray-100">
+                   <Button onClick={handleReviewConfirm} fullWidth>Confirm & Pay</Button>
+                </div>
+             </div>
+          )}
+
+           {/* Payment Methods */}
+           {appState === AppState.PAYMENT_METHODS && (
+             <div className="absolute inset-0 z-50 bg-white flex flex-col">
+                <header className="flex items-center p-4 border-b border-gray-100">
+                   <button onClick={() => setAppState(AppState.BOOKING_REVIEW)} className="p-2 -ml-2 text-gray-600">
+                      <ArrowLeft className="w-6 h-6" />
+                   </button>
+                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Payment</h1>
+                </header>
+                <div className="p-4 space-y-4">
+                    <button
+                       onClick={() => setSelectedPaymentMethod('card_1')}
+                       className={`w-full p-4 rounded-xl border flex items-center gap-4 ${selectedPaymentMethod === 'card_1' ? 'border-brand-500 bg-brand-50' : 'border-gray-200'}`}
+                    >
+                       <div className="w-10 h-6 bg-gray-800 rounded flex items-center justify-center text-white text-[8px]">CARD</div>
+                       <div className="text-left flex-1">
+                          <p className="font-bold text-gray-900">Visa •••• 4242</p>
+                       </div>
+                       {selectedPaymentMethod === 'card_1' && <Check className="w-5 h-5 text-brand-600" />}
+                    </button>
+
+                     <button
+                       onClick={() => setSelectedPaymentMethod('apple_pay')}
+                       className={`w-full p-4 rounded-xl border flex items-center gap-4 ${selectedPaymentMethod === 'apple_pay' ? 'border-brand-500 bg-brand-50' : 'border-gray-200'}`}
+                    >
+                       <div className="w-10 h-6 bg-black rounded flex items-center justify-center text-white text-[10px] font-bold">Pay</div>
+                       <div className="text-left flex-1">
+                          <p className="font-bold text-gray-900">Apple Pay</p>
+                       </div>
+                       {selectedPaymentMethod === 'apple_pay' && <Check className="w-5 h-5 text-brand-600" />}
+                    </button>
+                </div>
+                 <div className="mt-auto p-4 border-t border-gray-100">
+                   <Button onClick={handlePaymentContinue} fullWidth>Pay Now</Button>
+                </div>
+             </div>
+           )}
+
+           {/* Searching Parker / Loading */}
+           {appState === AppState.SEARCHING_PARKER && (
+              <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
+                 <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <Search className="w-8 h-8 text-brand-600" />
+                 </div>
+                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Finalizing Booking...</h2>
+                 <p className="text-gray-500">Connecting you with the spot...</p>
+              </div>
+           )}
+
+           {/* Active Booking / Waiting for Parker */}
+           {appState === AppState.WAITING_FOR_PARKER && (
+              <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col font-sans">
+                  {/* Active Booking Header */}
+                  <div className="bg-white p-6 pb-8 rounded-b-3xl shadow-sm border-b border-gray-100 z-10">
+                     <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-xl font-bold text-gray-900">Active Booking</h1>
+                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">CONFIRMED</span>
+                     </div>
+
+                     <div className="flex items-center gap-4 mb-6">
+                        <div className="w-16 h-16 rounded-xl bg-gray-200 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=200&q=80")' }}></div>
+                        <div>
+                           <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">Legacy West Garage</h2>
+                           <p className="text-sm text-gray-500">Section B, Level 2</p>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <button className="flex items-center justify-center gap-2 py-3 bg-brand-500 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20">
+                           <Navigation className="w-4 h-4" /> Navigate
+                        </button>
+                        <button className="flex items-center justify-center gap-2 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold">
+                           <Phone className="w-4 h-4" /> Call Help
+                        </button>
+                     </div>
+                  </div>
+
+                  {/* Booking Details */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Ticket Pass</h3>
+                        <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                           <span className="text-3xl font-bold text-gray-900 tracking-widest mb-1">8492</span>
+                           <span className="text-xs text-gray-500">Show this code at entrance</span>
+                        </div>
+                     </div>
+
+                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                         <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-500">Time Remaining</span>
+                            <span className="text-sm font-bold text-brand-600">1h 58m</span>
+                         </div>
+                         <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div className="bg-brand-500 h-2 rounded-full w-[10%]"></div>
+                         </div>
+                     </div>
+
+                     <button onClick={handleCancelBooking} className="w-full py-4 text-red-500 font-semibold">
+                        Cancel Booking
+                     </button>
+                  </div>
+              </div>
+           )}
+
+           {/* Bottom Navigation - Only on MAP_IDLE */}
+           {appState === AppState.MAP_IDLE && (
+              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[80px] grid grid-cols-4 items-center justify-items-center z-40 pb-2">
+                 <button
+                    onClick={() => handleBottomNavChange('find')}
+                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-gray-400'}`}
+                 >
+                    <Search className="w-6 h-6" />
+                    <span className="text-[10px] font-bold">Find</span>
+                 </button>
+                 <button
+                    onClick={() => handleBottomNavChange('car')}
+                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-gray-400'}`}
+                 >
+                    <Car className="w-6 h-6" />
+                    <span className="text-[10px] font-bold">My Car</span>
+                 </button>
+                 <button
+                    onClick={() => handleBottomNavChange('history')}
+                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-gray-400'}`}
+                 >
+                    <Clock className="w-6 h-6" />
+                    <span className="text-[10px] font-bold">History</span>
+                 </button>
+                 <button
+                    onClick={() => handleBottomNavChange('profile')}
+                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-gray-400'}`}
+                 >
+                    <UserIcon className="w-6 h-6" />
+                    <span className="text-[10px] font-bold">Profile</span>
+                 </button>
+              </div>
+           )}
+        </div>
+      );
+    }
 
     return (
       <div className="h-full w-full bg-white flex items-center justify-center">
