@@ -46,7 +46,11 @@ import {
   LogOut,
   Pencil,
   ArrowLeft,
-  Search
+  Search,
+  Star,
+  ChevronDown,
+  Timer,
+  MessageSquare
 } from 'lucide-react';
 
 const PARKING_TIERS: ParkingTier[] = [
@@ -798,38 +802,76 @@ const App: React.FC = () => {
           )}
 
            {appState === AppState.MAP_IDLE && (
-              <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-3xl shadow-lg z-20">
-                  <div className="grid grid-cols-4 items-center justify-items-center">
-                     <button
-                        onClick={() => handleBottomNavChange('find')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Search className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">Find</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('car')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Car className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">My Car</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('history')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Clock className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">History</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('profile')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <UserIcon className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">Profile</span>
-                     </button>
+              <>
+                 {/* Scrollable List for "Popular" or "Nearby" */}
+                 {!searchQuery && (
+                   <div className="absolute bottom-[80px] left-0 right-0 p-4 pb-2 z-20">
+                      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-white/50 max-h-[30vh] overflow-y-auto no-scrollbar">
+                         <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-gray-800 text-sm">
+                               {activeTab === 'popular' ? 'Popular Destinations' : 'Nearby Spots'}
+                            </h3>
+                            <button className="text-xs text-brand-600 font-medium">View All</button>
+                         </div>
+                         <div className="space-y-1">
+                             {activeTab === 'popular' ? (
+                                POPULAR_LOCATIONS.map((loc, i) => (
+                                    <LocationItem
+                                        key={i}
+                                        name={loc.name}
+                                        address={loc.address}
+                                        onClick={() => handleLocationSelect(loc)}
+                                        icon={<Star className="w-4 h-4 text-amber-500 fill-current" />}
+                                    />
+                                ))
+                             ) : (
+                                MOCK_BUSINESSES.map((biz, i) => (
+                                    <LocationItem
+                                        key={i}
+                                        name={biz.name}
+                                        address={biz.address}
+                                        onClick={() => handleLocationSelect(biz)}
+                                    />
+                                ))
+                             )}
+                         </div>
+                      </div>
+                   </div>
+                 )}
+
+                 <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-3xl shadow-lg z-20">
+                      <div className="grid grid-cols-4 items-center justify-items-center">
+                         <button
+                            onClick={() => handleBottomNavChange('find')}
+                            className={`flex flex-col items-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-gray-400'}`}
+                         >
+                            <Search className="w-6 h-6" />
+                            <span className="text-[10px] font-bold">Find</span>
+                         </button>
+                         <button
+                            onClick={() => handleBottomNavChange('car')}
+                            className={`flex flex-col items-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-gray-400'}`}
+                         >
+                            <Car className="w-6 h-6" />
+                            <span className="text-[10px] font-bold">My Car</span>
+                         </button>
+                         <button
+                            onClick={() => handleBottomNavChange('history')}
+                            className={`flex flex-col items-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-gray-400'}`}
+                         >
+                            <Clock className="w-6 h-6" />
+                            <span className="text-[10px] font-bold">History</span>
+                         </button>
+                         <button
+                            onClick={() => handleBottomNavChange('profile')}
+                            className={`flex flex-col items-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-gray-400'}`}
+                         >
+                            <UserIcon className="w-6 h-6" />
+                            <span className="text-[10px] font-bold">Profile</span>
+                         </button>
+                      </div>
                   </div>
-              </div>
+              </>
            )}
 
             {appState === AppState.SPOT_SELECTED && selectedSpot && (
@@ -880,6 +922,314 @@ const App: React.FC = () => {
                          </Button>
                     </div>
                 </div>
+            )}
+
+            {/* --- BOOKING FLOW STEPS --- */}
+
+            {/* 1. SELECT VEHICLE */}
+            {appState === AppState.SELECT_VEHICLE && (
+                <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col">
+                     <div className="p-6 pb-2 flex-none">
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+                        <div className="flex items-center gap-3 mb-6">
+                            <button onClick={() => setAppState(AppState.SPOT_SELECTED)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                                <ArrowLeft className="w-5 h-5 text-gray-900" />
+                            </button>
+                            <h2 className="text-xl font-bold text-gray-900">Select Vehicle</h2>
+                        </div>
+                     </div>
+                     <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        <div className="space-y-3">
+                            {MOCK_VEHICLES.map(vehicle => (
+                                <button
+                                    key={vehicle.id}
+                                    onClick={() => handleVehicleSelection(vehicle.id)}
+                                    className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                                        selectedVehicleId === vehicle.id
+                                        ? 'border-brand-500 bg-brand-50'
+                                        : 'border-gray-100 bg-white hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedVehicleId === vehicle.id ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-500'}`}>
+                                            <Car className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-bold text-gray-900">{vehicle.make} {vehicle.model}</p>
+                                            <p className="text-sm text-gray-500">{vehicle.licensePlate}</p>
+                                        </div>
+                                    </div>
+                                    {selectedVehicleId === vehicle.id && (
+                                        <div className="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center">
+                                            <Check className="w-4 h-4" />
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                            <button className="w-full p-4 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center gap-2 text-gray-500 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all">
+                                <Plus className="w-5 h-5" />
+                                Add New Vehicle
+                            </button>
+                        </div>
+                     </div>
+                     <div className="p-6 border-t border-gray-100 flex-none bg-white">
+                        <Button fullWidth onClick={handleVehicleConfirm} className="h-14 text-lg">
+                            Continue
+                        </Button>
+                     </div>
+                </div>
+            )}
+
+            {/* 2. SELECT TIER (Virtual Spots) */}
+            {appState === AppState.SELECT_TIER && (
+                <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col">
+                     <div className="p-6 pb-2 flex-none">
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+                        <div className="flex items-center gap-3 mb-6">
+                            <button onClick={() => setAppState(AppState.SELECT_VEHICLE)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                                <ArrowLeft className="w-5 h-5 text-gray-900" />
+                            </button>
+                            <h2 className="text-xl font-bold text-gray-900">Choose Service</h2>
+                        </div>
+                     </div>
+                     <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        <div className="space-y-4">
+                            {PARKING_TIERS.map(tier => (
+                                <button
+                                    key={tier.id}
+                                    onClick={() => handleTierSelect(tier)}
+                                    className={`w-full p-5 rounded-2xl border-2 text-left transition-all ${
+                                        selectedTier.id === tier.id
+                                        ? 'border-brand-500 bg-brand-50 shadow-sm'
+                                        : 'border-gray-100 bg-white hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            {tier.id === 'vip' && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
+                                            <span className="font-bold text-gray-900 text-lg">{tier.name}</span>
+                                        </div>
+                                        <span className="font-bold text-brand-600 text-lg">${tier.price}</span>
+                                    </div>
+                                    <p className="text-gray-500 text-sm leading-relaxed">{tier.description}</p>
+                                </button>
+                            ))}
+                        </div>
+                     </div>
+                     <div className="p-6 border-t border-gray-100 flex-none bg-white">
+                        <Button fullWidth onClick={handleTierContinue} className="h-14 text-lg">
+                            Confirm ${selectedTier.price}
+                        </Button>
+                     </div>
+                </div>
+            )}
+
+            {/* 3. BOOKING REVIEW */}
+            {appState === AppState.BOOKING_REVIEW && (
+                 <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col">
+                    <div className="p-6 pb-2 flex-none">
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+                        <div className="flex items-center gap-3 mb-6">
+                            <button onClick={() => setAppState(AppState.SELECT_VEHICLE)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                                <ArrowLeft className="w-5 h-5 text-gray-900" />
+                            </button>
+                            <h2 className="text-xl font-bold text-gray-900">Review Booking</h2>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        <div className="space-y-6">
+                            {/* Summary Card */}
+                            <div className="bg-gray-50 rounded-2xl p-4 space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-brand-600 shrink-0">
+                                        <MapPin className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Destination</p>
+                                        <h3 className="font-bold text-gray-900">{selectedSpot?.location.address || "Selected Spot"}</h3>
+                                        <p className="text-sm text-gray-500">{selectedSpot?.location.address}</p>
+                                    </div>
+                                </div>
+                                <div className="w-full h-px bg-gray-200" />
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-brand-600 shrink-0">
+                                        <Clock className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Duration</p>
+                                        <h3 className="font-bold text-gray-900">2 Hours</h3>
+                                        <p className="text-sm text-gray-500">Until 6:30 PM</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Breakdown */}
+                            <div>
+                                <h3 className="font-bold text-gray-900 mb-3">Payment Summary</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Parking Fee</span>
+                                        <span>${selectedSpot?.price || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Service Fee</span>
+                                        <span>$2.00</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Taxes</span>
+                                        <span>$1.50</span>
+                                    </div>
+                                    <div className="w-full h-px bg-gray-100 my-2" />
+                                    <div className="flex justify-between font-bold text-xl text-gray-900">
+                                        <span>Total</span>
+                                        <span>${((selectedSpot?.price || 0) + 3.50).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6 border-t border-gray-100 flex-none bg-white">
+                        <Button fullWidth onClick={handleReviewConfirm} className="h-14 text-lg shadow-brand-500/25">
+                            Proceed to Payment
+                        </Button>
+                    </div>
+                 </div>
+            )}
+
+            {/* 4. PAYMENT METHODS */}
+            {appState === AppState.PAYMENT_METHODS && (
+                 <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col">
+                    <div className="p-6 pb-2 flex-none">
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+                        <div className="flex items-center gap-3 mb-6">
+                            <button onClick={() => setAppState(AppState.BOOKING_REVIEW)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                                <ArrowLeft className="w-5 h-5 text-gray-900" />
+                            </button>
+                            <h2 className="text-xl font-bold text-gray-900">Payment Method</h2>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        <div className="space-y-3">
+                             <button
+                                onClick={() => setSelectedPaymentMethod('apple_pay')}
+                                className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                                    selectedPaymentMethod === 'apple_pay'
+                                    ? 'border-brand-500 bg-brand-50'
+                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                }`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-lg bg-black text-white flex items-center justify-center">
+                                        <span className="font-bold text-xs">Pay</span>
+                                    </div>
+                                    <span className="font-bold text-gray-900">Apple Pay</span>
+                                </div>
+                                {selectedPaymentMethod === 'apple_pay' && <Check className="w-5 h-5 text-brand-600" />}
+                            </button>
+
+                            <button
+                                onClick={() => setSelectedPaymentMethod('card_1')}
+                                className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                                    selectedPaymentMethod === 'card_1'
+                                    ? 'border-brand-500 bg-brand-50'
+                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                }`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                                        <CreditCard className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-bold text-gray-900">Visa •••• 4242</p>
+                                        <p className="text-xs text-gray-500">Expires 12/24</p>
+                                    </div>
+                                </div>
+                                {selectedPaymentMethod === 'card_1' && <Check className="w-5 h-5 text-brand-600" />}
+                            </button>
+
+                            <button className="w-full p-4 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center gap-2 text-gray-500 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all">
+                                <Plus className="w-5 h-5" />
+                                Add New Card
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-6 border-t border-gray-100 flex-none bg-white">
+                        <Button fullWidth onClick={handlePaymentContinue} className="h-14 text-lg shadow-brand-500/25">
+                            Pay Now
+                        </Button>
+                    </div>
+                 </div>
+            )}
+
+            {/* 5. SEARCHING PARKER */}
+            {appState === AppState.SEARCHING_PARKER && (
+                 <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                    <div className="w-24 h-24 rounded-full bg-brand-50 flex items-center justify-center mb-6 relative">
+                        <div className="absolute inset-0 rounded-full border-4 border-brand-100 animate-ping"></div>
+                        <Search className="w-10 h-10 text-brand-600 animate-pulse" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Connecting to Valet...</h2>
+                    <p className="text-gray-500 max-w-xs">We are confirming your spot with a nearby parker. This should only take a moment.</p>
+                 </div>
+            )}
+
+            {/* 6. WAITING FOR PARKER / ACTIVE BOOKING */}
+            {appState === AppState.WAITING_FOR_PARKER && (
+                 <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom duration-500 max-h-[90vh] flex flex-col">
+                     {/* Active State Header */}
+                     <div className="bg-brand-600 p-6 rounded-t-3xl text-white">
+                         <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                <span className="font-bold text-sm uppercase tracking-wide opacity-90">Live Activity</span>
+                            </div>
+                            <span className="text-sm opacity-90">00:15:30</span>
+                         </div>
+                         <h2 className="text-2xl font-bold mb-1">Meet David at Entrance</h2>
+                         <p className="opacity-80">Arrival in 4 mins • Blue Ford Focus</p>
+                     </div>
+
+                     <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                         {/* Action Buttons */}
+                         <div className="flex gap-4">
+                             <button className="flex-1 py-3 bg-gray-50 rounded-xl text-gray-700 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-100">
+                                 <Phone className="w-4 h-4" /> Call
+                             </button>
+                             <button className="flex-1 py-3 bg-gray-50 rounded-xl text-gray-700 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-100">
+                                 <MessageSquare className="w-4 h-4" /> Chat
+                             </button>
+                         </div>
+
+                         {/* Steps */}
+                         <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                             <div className="relative">
+                                 <div className="absolute -left-8 w-6 h-6 rounded-full bg-brand-500 border-4 border-white shadow-sm flex items-center justify-center z-10">
+                                    <Car className="w-3 h-3 text-white" />
+                                 </div>
+                                 <h4 className="font-bold text-gray-900 text-sm">You are on the way</h4>
+                                 <p className="text-xs text-gray-500 mt-1">Navigate to the pin location.</p>
+                             </div>
+                             <div className="relative opacity-50">
+                                 <div className="absolute -left-8 w-6 h-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center z-10">
+                                    <UserIcon className="w-3 h-3 text-gray-500" />
+                                 </div>
+                                 <h4 className="font-bold text-gray-900 text-sm">Meet Valet</h4>
+                                 <p className="text-xs text-gray-500 mt-1">Hand over keys securely.</p>
+                             </div>
+                             <div className="relative opacity-50">
+                                 <div className="absolute -left-8 w-6 h-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center z-10">
+                                    <Check className="w-3 h-3 text-gray-500" />
+                                 </div>
+                                 <h4 className="font-bold text-gray-900 text-sm">Parking Complete</h4>
+                                 <p className="text-xs text-gray-500 mt-1">Your car is safe.</p>
+                             </div>
+                         </div>
+                     </div>
+
+                     <div className="p-4 border-t border-gray-100">
+                         <Button variant="secondary" fullWidth onClick={handleReset}>Cancel Booking</Button>
+                     </div>
+                 </div>
             )}
         </div>
       );
