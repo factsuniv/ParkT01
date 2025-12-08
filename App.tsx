@@ -45,8 +45,7 @@ import {
   Shield,
   LogOut,
   Pencil,
-  ArrowLeft,
-  Search
+  ArrowLeft
 } from 'lucide-react';
 
 const PARKING_TIERS: ParkingTier[] = [
@@ -121,7 +120,7 @@ const App: React.FC = () => {
   };
 
   const handleSearchFocus = () => {
-    setAppState(AppState.ContractorDashboard);
+    setAppState(AppState.SEARCHING);
   };
 
   const handleBackToMap = () => {
@@ -723,167 +722,6 @@ const App: React.FC = () => {
     if (appState === AppState.CONTRACTOR_SUPPORT) return renderContractorSubPage('Help Center');
     if (appState === AppState.CONTRACTOR_TERMS) return renderContractorSubPage('Terms of Service');
     if (appState === AppState.CONTRACTOR_PRIVACY) return renderContractorSubPage('Privacy Policy');
-
-    // --- MAP & BOOKING FLOW ---
-    const isMapState = [
-      AppState.MAP_IDLE,
-      AppState.SPOT_SELECTED,
-      AppState.SELECT_VEHICLE,
-      AppState.SELECT_TIER,
-      AppState.BOOKING_REVIEW,
-      AppState.PAYMENT_METHODS,
-      AppState.SEARCHING_PARKER,
-      AppState.WAITING_FOR_PARKER,
-      AppState.NAVIGATING,
-      AppState.ARRIVED
-    ].includes(appState);
-
-    if (isMapState) {
-      return (
-        <div className="relative h-full w-full bg-gray-100 overflow-hidden">
-          <Map
-            center={center}
-            spots={spots}
-            selectedSpotId={selectedSpot?.id}
-            onSpotClick={handleSpotClick}
-            onMapClick={handleMapClick}
-            isInteracting={appState === AppState.MAP_IDLE || appState === AppState.SPOT_SELECTED}
-          />
-
-          {/* Top Search Bar - Only show on MAP_IDLE or SPOT_SELECTED */}
-          {(appState === AppState.MAP_IDLE || appState === AppState.SPOT_SELECTED) && (
-             <div className="absolute top-0 left-0 right-0 p-4 pt-12 z-10 bg-gradient-to-b from-white/90 to-transparent pointer-events-none">
-                <div className="pointer-events-auto">
-                    <button
-                        onClick={() => setIsMenuOpen(true)}
-                        className="absolute left-6 top-[60px] p-2 bg-white rounded-full shadow-md z-20"
-                    >
-                        <Menu className="w-5 h-5 text-gray-700" />
-                    </button>
-                    <div className="pl-12">
-                         <SearchInput
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            onFocus={handleSearchFocus}
-                         />
-                    </div>
-                </div>
-
-                {/* Filter Tabs */}
-                {appState === AppState.MAP_IDLE && !searchQuery && (
-                   <div className="flex gap-2 mt-3 overflow-x-auto pb-2 pointer-events-auto no-scrollbar pl-12">
-                      <button
-                        onClick={() => setActiveTab('nearby')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm transition-colors ${
-                            activeTab === 'nearby'
-                            ? 'bg-brand-500 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        Nearby
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('popular')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm transition-colors ${
-                            activeTab === 'popular'
-                            ? 'bg-brand-500 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        Popular
-                      </button>
-                   </div>
-                )}
-             </div>
-          )}
-
-           {appState === AppState.MAP_IDLE && (
-              <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-3xl shadow-lg z-20">
-                  <div className="grid grid-cols-4 items-center justify-items-center">
-                     <button
-                        onClick={() => handleBottomNavChange('find')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Search className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">Find</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('car')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Car className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">My Car</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('history')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <Clock className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">History</span>
-                     </button>
-                     <button
-                        onClick={() => handleBottomNavChange('profile')}
-                        className={`flex flex-col items-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-gray-400'}`}
-                     >
-                        <UserIcon className="w-6 h-6" />
-                        <span className="text-[10px] font-bold">Profile</span>
-                     </button>
-                  </div>
-              </div>
-           )}
-
-            {appState === AppState.SPOT_SELECTED && selectedSpot && (
-                <div className="absolute bottom-0 left-0 right-0 bg-white p-6 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
-                    <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
-
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedSpot.location.address}</h2>
-                            <div className="flex items-center gap-2 text-gray-500">
-                                <span className="flex items-center text-sm"><MapPin className="w-3.5 h-3.5 mr-1" /> 0.2 mi</span>
-                                <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                                <span className="flex items-center text-sm"><Clock className="w-3.5 h-3.5 mr-1" /> 4 min walk</span>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-2xl font-bold text-brand-600">${selectedSpot.price}</span>
-                            <span className="text-xs text-gray-400 font-medium">total</span>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3 mb-6">
-                        <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                            <p className="text-xs text-gray-500 mb-1">Park Until</p>
-                            <p className="font-semibold text-gray-900">6:00 PM</p>
-                        </div>
-                        <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                            <p className="text-xs text-gray-500 mb-1">Vehicle</p>
-                            <p className="font-semibold text-gray-900">Tesla Model 3</p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                         <Button
-                            variant="secondary"
-                            className="flex-1 h-14 bg-gray-100 text-gray-900 hover:bg-gray-200 shadow-none border-transparent"
-                            onClick={() => setSelectedSpot(null)}
-                         >
-                            Cancel
-                         </Button>
-                         <Button
-                            fullWidth
-                            className="flex-[2] h-14 text-lg shadow-xl shadow-brand-500/30"
-                            onClick={handleContinueToCar}
-                         >
-                            Park Here
-                            <ArrowRight className="w-5 h-5 ml-2" />
-                         </Button>
-                    </div>
-                </div>
-            )}
-        </div>
-      );
-    }
 
     return (
       <div className="h-full w-full bg-white flex items-center justify-center">
