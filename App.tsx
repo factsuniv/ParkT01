@@ -120,7 +120,7 @@ const App: React.FC = () => {
   };
 
   const handleSearchFocus = () => {
-    setAppState(AppState.SEARCHING);
+    setAppState(AppState.ContractorDashboard);
   };
 
   const handleBackToMap = () => {
