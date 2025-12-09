@@ -785,19 +785,61 @@ const App: React.FC = () => {
                  />
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                 <div className="space-y-2">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Popular Destinations</h3>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                       {POPULAR_LOCATIONS.map((loc, idx) => (
-                          <LocationItem
-                            key={idx}
-                            name={loc.name}
-                            address={loc.address}
-                            onClick={() => handleLocationSelect(loc)}
-                          />
-                       ))}
+                 {searchQuery.length > 0 ? (
+                    <div className="space-y-2">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Search Results</h3>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {[...MOCK_BUSINESSES, ...POPULAR_LOCATIONS]
+                                .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.address?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map((loc, idx) => (
+                                <LocationItem
+                                    key={`search_${idx}`}
+                                    name={loc.name}
+                                    address={loc.address || ''}
+                                    onClick={() => handleLocationSelect(loc)}
+                                    icon={MOCK_BUSINESSES.some(b => b.name === loc.name) ? <Briefcase className="w-5 h-5" /> : undefined}
+                                />
+                            ))}
+                            {[...MOCK_BUSINESSES, ...POPULAR_LOCATIONS]
+                                .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.address?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .length === 0 && (
+                                    <div className="p-4 text-center text-gray-500 text-sm">No results found</div>
+                                )
+                            }
+                        </div>
                     </div>
-                 </div>
+                 ) : (
+                    <>
+                        <div className="space-y-2">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Nearby Businesses</h3>
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {MOCK_BUSINESSES.map((loc, idx) => (
+                                <LocationItem
+                                    key={`bus_${idx}`}
+                                    name={loc.name}
+                                    address={loc.address}
+                                    onClick={() => handleLocationSelect(loc)}
+                                    icon={<Briefcase className="w-5 h-5" />}
+                                />
+                            ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Popular Destinations</h3>
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {POPULAR_LOCATIONS.map((loc, idx) => (
+                                <LocationItem
+                                    key={`pop_${idx}`}
+                                    name={loc.name}
+                                    address={loc.address}
+                                    onClick={() => handleLocationSelect(loc)}
+                                />
+                            ))}
+                            </div>
+                        </div>
+                    </>
+                 )}
               </div>
             </div>
           )}
