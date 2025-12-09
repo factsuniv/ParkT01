@@ -135,22 +135,17 @@ const App: React.FC = () => {
     setSearchQuery(location.name);
     setCenter({ lat: location.lat, lng: location.lng });
     
-    const isBusiness = MOCK_BUSINESSES.some(b => b.name === location.name);
-    
-    if (isBusiness) {
-       const newSpot: Spot = {
-         id: `temp_${Date.now()}`,
-         location: { lat: location.lat, lng: location.lng, address: location.name },
-         price: 0, 
-         status: SpotStatus.AVAILABLE,
-         isVirtual: true
-       };
-       setSpots(prev => [...prev, newSpot]);
-       setSelectedSpot(newSpot);
-       setAppState(AppState.SPOT_SELECTED);
-    } else {
-       setAppState(AppState.MAP_IDLE); 
-    }
+    // Always treat selected search location as a bookable destination (Virtual Spot)
+    const newSpot: Spot = {
+      id: `temp_${Date.now()}`,
+      location: { lat: location.lat, lng: location.lng, address: location.name },
+      price: 0,
+      status: SpotStatus.AVAILABLE,
+      isVirtual: true
+    };
+    setSpots(prev => [...prev, newSpot]);
+    setSelectedSpot(newSpot);
+    setAppState(AppState.SPOT_SELECTED);
     
     setLoading(false);
   };
