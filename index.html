@@ -1,94 +1,306 @@
-
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Parkr Valet</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              brand: {
-                50: '#eff6ff',
-                100: '#dbeafe',
-                500: '#3b82f6', // Uber-ish Blue
-                600: '#2563eb',
-                700: '#1d4ed8',
-                900: '#1e3a8a',
-              }
-            }
-          }
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Parkr - Find Parking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
         }
-      }
-    </script>
-    <style>
-      /* Hide scrollbar for Chrome, Safari and Opera */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      /* Hide scrollbar for IE, Edge and Firefox */
-      .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-      }
-      .leaflet-control-attribution {
-        display: none !important;
-      }
-      /* Custom Pulse for the "P" icon */
-      @keyframes pulse-ring {
-        0% { transform: scale(0.33); }
-        80%, 100% { opacity: 0; }
-      }
-      @keyframes pulse-dot {
-        0% { transform: scale(0.8); }
-        50% { transform: scale(1); }
-        100% { transform: scale(0.8); }
-      }
-      body {
-        background-color: #f0f2f5; /* Match desktop wrapper bg */
-        margin: 0;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-      }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0"
-  }
-}
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#007AFF",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#1a1a1a",
+                        "secondary-light": "#EAF5FF",
+                        "secondary-dark": "#002d61",
+                        "text-light": "#333333",
+                        "text-dark": "#E5E5EA",
+                        "subtext-light": "#8E8E93",
+                        "subtext-dark": "#a1a1aa",
+                        "border-light": "#E5E5EA",
+                        "border-dark": "#3f3f46",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark">
+<div class="relative flex h-screen w-full flex-col group/design-root overflow-hidden">
+<header class="absolute top-0 left-0 right-0 z-20 bg-transparent px-4 pt-4 font-display">
+<div class="flex items-center justify-between gap-2">
+<div class="flex-1">
+<label class="flex flex-col h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-md bg-white dark:bg-[#2c2c2e]">
+<div class="text-subtext-light dark:text-subtext-dark flex items-center justify-center pl-3.5">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-text-light dark:text-text-dark focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-subtext-light dark:placeholder:text-subtext-dark pl-2 text-base font-normal leading-normal" placeholder="Enter destination or address" value="Current Location"/>
+</div>
+</label>
+</div>
+<button class="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-primary text-white shadow-md">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</header>
+<main class="flex-1 relative">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A stylized map view of a city with streets and blocks." data-location="Los Angeles" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBuvmHTAV2_epOLw3Khr9oTOoardOhTlRRoluYlqU5BxLNRXLxlBXdxxjGCgDwN4upSqE-bbN8j9gReSXZ1_tbKrTygnH6W9uTb9aOsp2yY4XJ7f0hR7Sz5CeHnZ02-cxC7zUCqByZVdL6WU_B2FEPLjfRzya1quFFdbGwLPIqa6wdej9Naj1qxpnX4RQEuDTFhJGsyUy5OZ8BUT_2me_Y-WLbwI8hypjmt4GQEoOt8g8QWW-tigx12W-HINCXSQTA6tJMgLWd-ZiIR');">
+</div>
+<div class="absolute bottom-1/3 right-4 z-10">
+<button class="flex size-14 items-center justify-center rounded-full bg-white dark:bg-[#2c2c2e] text-primary shadow-lg">
+<span class="material-symbols-outlined text-3xl">my_location</span>
+</button>
+</div>
+</main>
+<div class="absolute bottom-0 left-0 right-0 z-20 flex h-2/5 flex-col items-stretch rounded-t-xl bg-background-light dark:bg-background-dark shadow-[0_-4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
+<div class="flex h-5 w-full cursor-grab items-center justify-center py-4">
+<div class="h-1.5 w-10 rounded-full bg-border-light dark:bg-border-dark"></div>
+</div>
+<div class="flex border-b border-border-light dark:border-border-dark px-4">
+<button class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-primary text-primary dark:text-primary dark:border-primary" onclick="showTab('nearby')">
+Nearby Spots
+</button>
+<button class="flex-1 py-3 text-center text-sm font-medium text-subtext-light dark:text-subtext-dark border-b-2 border-transparent" onclick="showTab('popular')">
+Popular Locations
+</button>
+</div>
+<div class="tab-content flex-1 overflow-y-auto" id="nearby-spots-content" style="display: block;">
+<div class="px-4 pb-3 pt-3 flex justify-between items-center">
+<h3 class="text-lg font-bold text-text-light dark:text-text-dark">Nearby Spots</h3>
+<span class="text-sm font-medium text-subtext-light dark:text-subtext-dark">12 found</span>
+</div>
+<div class="flex flex-col gap-3 px-4 pb-4">
+<div class="flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] p-4 transition-all hover:bg-secondary-light dark:hover:bg-secondary-dark" onclick="selectSpot('123 Main St, Downtown')">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h4 class="font-bold text-text-light dark:text-text-dark">123 Main St, Downtown</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">0.5 mi away · Driveway</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-lg font-bold text-primary">$3.50/hr</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-subtext-light dark:text-subtext-dark">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-medium text-text-light dark:text-text-dark">4.8</span>
+<span class="text-sm">(125 reviews)</span>
+</div>
+</div>
+<div class="flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] p-4 transition-all hover:bg-secondary-light dark:hover:bg-secondary-dark" onclick="selectSpot('456 Oak Avenue')">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h4 class="font-bold text-text-light dark:text-text-dark">456 Oak Avenue</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">0.8 mi away · Garage</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-lg font-bold text-primary">$25/day</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-subtext-light dark:text-subtext-dark">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-medium text-text-light dark:text-text-dark">4.9</span>
+<span class="text-sm">(88 reviews)</span>
+</div>
+</div>
+<div class="flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] p-4 transition-all hover:bg-secondary-light dark:hover:bg-secondary-dark" onclick="selectSpot('789 Pine Ln')">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h4 class="font-bold text-text-light dark:text-text-dark">789 Pine Ln</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">1.2 mi away · Street Parking</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-lg font-bold text-primary">$2.00/hr</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-subtext-light dark:text-subtext-dark">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-medium text-text-light dark:text-text-dark">4.6</span>
+<span class="text-sm">(210 reviews)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="tab-content flex-1 overflow-y-auto px-4 pb-4" id="popular-locations-content" style="display: none;">
+<div class="popular-flow-step" id="popular-flow-step-1">
+<h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4 mt-2">Where are you headed today?</h3>
+<div class="flex flex-col gap-4">
+<button class="popular-location-card flex items-center gap-4 p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] shadow-sm hover:bg-secondary-light dark:hover:bg-secondary-dark" data-location="Dodger Stadium" onclick="selectLocation('Dodger Stadium')">
+<span class="material-symbols-outlined text-3xl text-primary">sports_baseball</span>
+<div class="flex flex-col text-left">
+<h4 class="font-bold text-text-light dark:text-text-dark">Dodger Stadium</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">Concerts &amp; Games</p>
+</div>
+</button>
+<button class="popular-location-card flex items-center gap-4 p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] shadow-sm hover:bg-secondary-light dark:hover:bg-secondary-dark" data-location="The Grove" onclick="selectLocation('The Grove')">
+<span class="material-symbols-outlined text-3xl text-primary">shopping_bag</span>
+<div class="flex flex-col text-left">
+<h4 class="font-bold text-text-light dark:text-text-dark">The Grove</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">Shopping &amp; Dining</p>
+</div>
+</button>
+<button class="popular-location-card flex items-center gap-4 p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] shadow-sm hover:bg-secondary-light dark:hover:bg-secondary-dark" data-location="Santa Monica Pier" onclick="selectLocation('Santa Monica Pier')">
+<span class="material-symbols-outlined text-3xl text-primary">kitesurfing</span>
+<div class="flex flex-col text-left">
+<h4 class="font-bold text-text-light dark:text-text-dark">Santa Monica Pier</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">Beach &amp; Attractions</p>
+</div>
+</button>
+</div>
+</div>
+<div class="popular-flow-step" id="popular-flow-step-2" style="display: none;">
+<h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4 mt-2">When do you need parking at <span class="text-primary" id="selected-location-name"></span>?</h3>
+<div class="flex flex-col gap-4">
+<label class="block">
+<span class="text-subtext-light dark:text-subtext-dark text-sm">Date</span>
+<input class="form-input mt-1 block w-full rounded-xl border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] text-text-light dark:text-text-dark focus:border-primary focus:ring-primary" type="date" value="2023-10-27"/>
+</label>
+<label class="block">
+<span class="text-subtext-light dark:text-subtext-dark text-sm">Time</span>
+<input class="form-input mt-1 block w-full rounded-xl border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] text-text-light dark:text-text-dark focus:border-primary focus:ring-primary" type="time" value="14:00"/>
+</label>
+<button class="w-full py-3 rounded-xl bg-primary text-white font-bold mt-4" onclick="showResults()">Find Parking</button>
+</div>
+</div>
+<div class="popular-flow-step" id="popular-flow-results" style="display: none;">
+<h3 class="text-xl font-bold text-text-light dark:text-text-dark mb-4 mt-2">Parking options near <span class="text-primary" id="results-location-name"></span></h3>
+<div class="flex flex-col gap-3">
+<div class="flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] p-4 transition-all hover:bg-secondary-light dark:hover:bg-secondary-dark" onclick="selectSpot('Stadium Parking Lot A')">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h4 class="font-bold text-text-light dark:text-text-dark">Stadium Parking Lot A</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">0.2 mi away · Surface Lot</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-lg font-bold text-primary">$15/event</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-subtext-light dark:text-subtext-dark">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-medium text-text-light dark:text-text-dark">4.7</span>
+<span class="text-sm">(300 reviews)</span>
+</div>
+</div>
+<div class="flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#2c2c2e] p-4 transition-all hover:bg-secondary-light dark:hover:bg-secondary-dark" onclick="selectSpot('Local Garage B')">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h4 class="font-bold text-text-light dark:text-text-dark">Local Garage B</h4>
+<p class="text-sm text-subtext-light dark:text-subtext-dark">0.4 mi away · Multi-story Garage</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-lg font-bold text-primary">$10/hr</p>
+</div>
+</div>
+<div class="flex items-center gap-1 text-subtext-light dark:text-subtext-dark">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-medium text-text-light dark:text-text-dark">4.5</span>
+<span class="text-sm">(180 reviews)</span>
+</div>
+</div>
+<button class="w-full py-3 rounded-xl bg-primary text-white font-bold mt-4" onclick="resetFlow()">Choose another location</button>
+</div>
+</div>
+</div>
+<div id="booking-confirmation" class="absolute inset-0 bg-background-light dark:bg-background-dark z-50 flex flex-col items-center justify-center text-center p-6" style="display: none;">
+    <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+        <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+    </div>
+    <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-2">Booking Confirmed!</h2>
+    <p class="text-subtext-light dark:text-subtext-dark mb-8">You have successfully booked a spot at <span id="booked-spot-name" class="font-bold text-text-light dark:text-text-dark"></span>.</p>
+    <button onclick="resetApp()" class="w-full py-3 rounded-xl bg-primary text-white font-bold">Back to Home</button>
+</div>
+</div>
+</div>
+<script>
+    let selectedLocation = '';
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.style.display = 'none';
+        });
+        document.querySelectorAll('.flex.border-b button').forEach(button => {
+            button.classList.remove('border-primary', 'text-primary');
+            button.classList.add('border-transparent', 'text-subtext-light', 'dark:text-subtext-dark');
+        });
+        if (tabName === 'nearby') {
+            document.getElementById('nearby-spots-content').style.display = 'block';
+            document.querySelector('.flex.border-b button:nth-child(1)').classList.add('border-primary', 'text-primary');
+            document.querySelector('.flex.border-b button:nth-child(1)').classList.remove('border-transparent', 'text-subtext-light', 'dark:text-subtext-dark');
+        } else if (tabName === 'popular') {
+            document.getElementById('popular-locations-content').style.display = 'block';
+            document.querySelector('.flex.border-b button:nth-child(2)').classList.add('border-primary', 'text-primary');
+            document.querySelector('.flex.border-b button:nth-child(2)').classList.remove('border-transparent', 'text-subtext-light', 'dark:text-subtext-dark');
+            resetFlow(); // Reset to step 1 when popular tab is opened
+        }
+    }
+    function selectLocation(locationName) {
+        selectedLocation = locationName;
+        document.getElementById('selected-location-name').textContent = selectedLocation;
+        document.getElementById('results-location-name').textContent = selectedLocation; // Pre-fill for results too
+        document.getElementById('popular-flow-step-1').style.display = 'none';
+        document.getElementById('popular-flow-step-2').style.display = 'block';
+        document.getElementById('popular-flow-results').style.display = 'none';
+    }
+    function showResults() {
+        document.getElementById('popular-flow-step-1').style.display = 'none';
+        document.getElementById('popular-flow-step-2').style.display = 'none';
+        document.getElementById('popular-flow-results').style.display = 'block';
+    }
+    function resetFlow() {
+        selectedLocation = '';
+        document.getElementById('popular-flow-step-1').style.display = 'block';
+        document.getElementById('popular-flow-step-2').style.display = 'none';
+        document.getElementById('popular-flow-results').style.display = 'none';
+    }
+    function selectSpot(spotName) {
+        document.getElementById('booked-spot-name').textContent = spotName;
+        document.getElementById('booking-confirmation').style.display = 'flex';
+    }
+    function resetApp() {
+        document.getElementById('booking-confirmation').style.display = 'none';
+        showTab('nearby');
+        resetFlow();
+    }
+    // Initialize to nearby spots content
+    document.addEventListener('DOMContentLoaded', () => {
+        showTab('nearby');
+    });
 </script>
-</head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
-  </body>
-</html>
+
+</body></html>
