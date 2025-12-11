@@ -45,8 +45,7 @@ import {
   Shield,
   LogOut,
   Pencil,
-  ArrowLeft,
-  Search
+  ArrowLeft
 } from 'lucide-react';
 
 const PARKING_TIERS: ParkingTier[] = [
@@ -135,14 +134,15 @@ const App: React.FC = () => {
     setSearchQuery(location.name);
     setCenter({ lat: location.lat, lng: location.lng });
     
-    // Always treat selected search location as a bookable destination (Virtual Spot)
+    // Always create a virtual spot so the user can book at this location
     const newSpot: Spot = {
       id: `temp_${Date.now()}`,
       location: { lat: location.lat, lng: location.lng, address: location.name },
-      price: 0,
+      price: 0, // Price set by tier later
       status: SpotStatus.AVAILABLE,
       isVirtual: true
     };
+    
     setSpots(prev => [...prev, newSpot]);
     setSelectedSpot(newSpot);
     setAppState(AppState.SPOT_SELECTED);
@@ -237,7 +237,7 @@ const App: React.FC = () => {
   // Helper to render consistent sub-pages for Contractor Account
   const renderContractorSubPage = (title: string, content?: React.ReactNode) => (
     <div className="h-full w-full bg-[#f8fafc] flex flex-col font-sans overflow-hidden">
-        <header className="flex items-center justify-between p-4 pt-6 pb-2 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <header className="flex items-center justify-between p-4 pt-6 pb-2 bg-white/50 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200/50">
             <button 
                 onClick={() => setAppState(AppState.CONTRACTOR_ACCOUNT)}
                 className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors"
@@ -326,6 +326,530 @@ const App: React.FC = () => {
           </footer>
         </div>
       );
+    }
+
+    // --- CONSUMER BOOKING FLOWS ---
+
+    // 1. SELECT VEHICLE
+    if (appState === AppState.SELECT_VEHICLE) {
+      return (
+        <div className="h-full w-full bg-white flex flex-col font-sans overflow-hidden">
+          <header className="sticky top-0 bg-white z-30 border-b border-gray-100 flex-none">
+            <div className="flex items-center p-4 pb-3 justify-between">
+              <button 
+                onClick={() => setAppState(AppState.SPOT_SELECTED)}
+                className="text-brand-600 flex size-12 shrink-0 items-center justify-center hover:bg-gray-50 rounded-full"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <h1 className="text-brand-600 text-lg font-bold leading-tight flex-1 text-center">Your Car</h1>
+              <div className="flex size-12 shrink-0"></div>
+            </div>
+          </header>
+
+          <main className="flex-grow px-4 pt-6 pb-20 overflow-y-auto">
+            <p className="text-gray-900 text-base font-normal leading-normal pb-6 text-center">
+              Select the vehicle you are parking with.
+            </p>
+            
+            <div className="space-y-4 max-w-md mx-auto">
+              <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-4 text-center text-base font-bold text-white shadow-lg shadow-brand-500/30 transition-transform duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98]">
+                <Plus className="w-5 h-5" />
+                <span>Add a New Car</span>
+              </button>
+
+              {MOCK_VEHICLES.map((vehicle) => {
+                const isSelected = selectedVehicleId === vehicle.id;
+                return (
+                  <div 
+                    key={vehicle.id}
+                    onClick={() => handleVehicleSelection(vehicle.id)}
+                    className={`
+                      flex items-center gap-4 rounded-xl p-4 justify-between border-2 transition-all cursor-pointer shadow-sm
+                      ${isSelected 
+                        ? 'bg-white border-brand-500 ring-4 ring-brand-500/10' 
+                        : 'bg-white border-transparent hover:border-gray-200'}
+                    `}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`flex items-center justify-center rounded-lg shrink-0 size-12 ${isSelected ? 'bg-brand-50 text-brand-600' : 'bg-gray-100 text-gray-500'}`}>
+                        <Car className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col justify-center text-left">
+                        <p className="text-gray-900 text-base font-medium leading-normal">{vehicle.make} {vehicle.model}</p>
+                        <p className="text-gray-500 text-sm font-normal leading-normal">{vehicle.licensePlate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isSelected && (
+                        <div className="flex size-6 items-center justify-center text-white bg-brand-500 rounded-full">
+                          <Check className="w-4 h-4" />
+                        </div>
+                      )}
+                      <button className="shrink-0 text-gray-400 hover:text-brand-600 p-2">
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </main>
+
+          <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex-none">
+              <Button 
+                 fullWidth 
+                 size="lg" 
+                 isLoading={loading}
+                 onClick={handleVehicleConfirm}
+              >
+                 Confirm
+              </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. SELECT TIER (For Virtual/Search Spots)
+    if (appState === AppState.SELECT_TIER) {
+      return (
+        <div className="h-full w-full bg-white flex flex-col font-sans overflow-hidden">
+          <header className="sticky top-0 bg-white z-30 flex-none">
+            <div className="flex items-center p-4 pb-2 justify-between">
+              <button 
+                onClick={() => setAppState(AppState.SELECT_VEHICLE)}
+                className="text-[#111418] flex size-12 shrink-0 items-center justify-center hover:bg-gray-50 rounded-full"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <h2 className="text-[#111418] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Select Parking Tier</h2>
+              <div className="flex size-12 shrink-0"></div>
+            </div>
+          </header>
+
+          <main className="flex-grow px-4 py-3 pb-24 overflow-y-auto">
+            <div className="flex flex-col gap-4">
+              {PARKING_TIERS.map((tier) => {
+                const isSelected = selectedTier.id === tier.id;
+                const borderColor = isSelected ? 'border-brand-500 ring-2 ring-brand-500/20' : (tier.id === 'vip' ? 'border-amber-400' : 'border-blue-200');
+                const bgColor = isSelected ? 'bg-brand-50/50' : 'bg-white/80';
+                
+                return (
+                  <div 
+                    key={tier.id}
+                    onClick={() => handleTierSelect(tier)}
+                    className={`flex flex-col rounded-xl p-5 backdrop-blur-md border ${borderColor} ${bgColor} cursor-pointer transition-all shadow-sm`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {tier.icon === 'P' && <div className={`text-2xl font-bold ${tier.color}`}>P</div>}
+                      {tier.icon === 'car' && <Car className={`w-7 h-7 ${tier.color}`} />}
+                      {tier.icon === 'star' && <Award className={`w-7 h-7 ${tier.color}`} />}
+                      <h3 className="text-xl font-bold leading-tight tracking-[-0.015em] text-[#111418]">{tier.name}</h3>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-600 mb-2">${tier.price}</p>
+                    <p className="text-sm text-gray-500 leading-normal">
+                      {tier.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </main>
+
+          <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex-none">
+              <Button 
+                 fullWidth 
+                 size="lg" 
+                 onClick={handleTierContinue}
+              >
+                 Continue
+              </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. BOOKING REVIEW
+    if (appState === AppState.BOOKING_REVIEW) {
+      const displayPrice = selectedSpot?.isVirtual ? selectedTier.price : selectedSpot?.price;
+      const priceString = displayPrice?.toFixed(2);
+
+      return (
+        <div className="h-full w-full bg-white flex flex-col font-sans overflow-hidden">
+          <header className="sticky top-0 bg-white z-30 flex-none">
+            <div className="flex items-center p-4 pb-2 justify-between">
+              <button 
+                onClick={() => setAppState(selectedSpot?.isVirtual ? AppState.SELECT_TIER : AppState.SELECT_VEHICLE)}
+                className="text-[#111418] flex size-12 shrink-0 items-center justify-center hover:bg-gray-50 rounded-full"
+              >
+                 <ChevronLeft className="w-6 h-6" />
+              </button>
+              <h2 className="text-[#111418] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Booking Details</h2>
+              <div className="flex size-12 shrink-0"></div>
+            </div>
+          </header>
+
+          <main className="flex-grow pb-24 overflow-y-auto">
+            <div className="flex px-4 py-3">
+               <div className="w-full h-48 rounded-xl overflow-hidden relative shadow-md">
+                  <img 
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzCWlho9gZR3_k1OLAlNGo3lkH-6Sv7XLDnVFg20SZnxKSawVXZzi_7YI_Zg0KBGV7WKjATnL7J-3Moj-s5plr53C44goq0BWGvyju80VQbzvvrKtrSqxChgGlzYI_VFrHHrixy59A33v09YqJ2SIR3hHDhBxWXsmcqmzkZOaVc5TTzA8KgcnZY6OCCCQ7tW0Uq9Lzit0_7MXr90sC_BPVOvmOxzGKEgMbbINnn48CcnWZ0EmdDJHln5ym4lA-GFOxsX0HoJt27AqK" 
+                    alt="Map Location" 
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                     <div className="bg-brand-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+                        {selectedSpot?.location.address || 'San Francisco'}
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="px-4 mt-2">
+              <h2 className="text-brand-600 text-2xl font-extrabold pb-2">Review</h2>
+              <p className="text-[#111418] text-base font-normal leading-normal pb-4">
+                Ready to go? Please arrive at the spot in 30 minutes once connected to a parker.
+              </p>
+            </div>
+
+            <div className="mx-4 mt-2 rounded-xl bg-gray-50 p-4 shadow-sm space-y-4 border border-gray-100">
+              <div className="flex items-center gap-4 min-h-[72px]">
+                <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Spot Location</p>
+                  <p className="text-[#60758a] text-sm font-normal leading-normal line-clamp-2">{selectedSpot?.location.address}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 min-h-[72px]">
+                <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                  <CircleDollarSign className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Total Cost</p>
+                  <p className="text-[#60758a] text-sm font-normal leading-normal line-clamp-2">${priceString}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 min-h-[72px]">
+                <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                   <Calendar className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Booking Time</p>
+                  <p className="text-brand-600 font-bold line-clamp-2">ASAP</p>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex flex-col gap-3 flex-none">
+            <Button 
+              fullWidth 
+              size="lg" 
+              isLoading={loading}
+              onClick={handleReviewConfirm}
+            >
+              Confirm Booking
+            </Button>
+            <Button 
+              fullWidth 
+              variant="ghost"
+              onClick={handleReset}
+              className="text-gray-500 font-normal h-12"
+            >
+              Cancel Booking
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 4. PAYMENT
+    if (appState === AppState.PAYMENT_METHODS) {
+      return (
+        <div className="h-full w-full bg-white flex flex-col font-sans overflow-hidden">
+          <header className="sticky top-0 bg-white z-30 flex-none">
+            <div className="flex items-center p-4 pb-2 justify-between">
+              <button 
+                onClick={() => setAppState(AppState.BOOKING_REVIEW)}
+                className="text-[#111418] flex size-12 shrink-0 items-center justify-center hover:bg-gray-50 rounded-full"
+              >
+                 <ChevronLeft className="w-6 h-6" />
+              </button>
+              <h2 className="text-[#111418] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Payment Options</h2>
+              <div className="flex size-12 shrink-0"></div>
+            </div>
+          </header>
+
+          <main className="flex-grow px-4 py-6 pb-24 overflow-y-auto">
+            <p className="text-[#111418] text-base font-bold leading-normal pb-4">My Saved Cards</p>
+            
+            <div 
+               onClick={() => setSelectedPaymentMethod('card_1')}
+               className={`rounded-lg p-4 flex items-center justify-between min-h-[64px] mb-3 cursor-pointer border transition-colors ${selectedPaymentMethod === 'card_1' ? 'bg-brand-50 border-brand-500' : 'bg-[#f0f2f5] border-transparent'}`}
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard className="text-[#60758a] w-6 h-6" />
+                <p className="text-[#111418] text-base font-normal leading-normal">Visa ending in •••• 1234</p>
+              </div>
+              {selectedPaymentMethod === 'card_1' && <Check className="text-brand-500 w-5 h-5" />}
+            </div>
+
+            <button className="flex items-center justify-center w-full bg-[#f0f2f5] rounded-lg min-h-[64px] py-4 px-4 text-brand-500 text-base font-medium leading-normal cursor-pointer hover:bg-gray-200 transition-colors">
+              <Plus className="w-5 h-5 mr-2" />
+              <span className="truncate">Add New Card</span>
+            </button>
+
+            <div className="h-px bg-gray-100 my-6"></div>
+
+            <p className="text-[#111418] text-base font-bold leading-normal pb-4">Digital Wallets</p>
+            <button 
+               onClick={() => setSelectedPaymentMethod('apple_pay')}
+               className="flex items-center justify-center w-full h-12 px-5 bg-brand-500 text-white text-base font-bold rounded-lg tracking-[0.015em] active:scale-[0.98] transition-transform"
+            >
+              Pay with Apple Pay
+            </button>
+          </main>
+
+          {selectedPaymentMethod && (
+              <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex-none">
+                  <Button 
+                     fullWidth 
+                     size="lg" 
+                     onClick={handlePaymentContinue}
+                  >
+                     Continue
+                  </Button>
+              </div>
+          )}
+        </div>
+      );
+    }
+
+    // 5. SEARCHING PARKER LOADING
+    if (appState === AppState.SEARCHING_PARKER) {
+      return (
+        <div className="h-full w-full bg-[#E5E5EA]/20 flex flex-col items-center justify-center relative font-sans overflow-hidden">
+          <h2 className="text-[#111418] text-lg font-bold mb-12 absolute top-[20%]">Finalizing details...</h2>
+          
+          {/* Pulsing Animation */}
+          <div className="relative flex items-center justify-center">
+              {/* Outer rings */}
+              <div className="absolute w-32 h-32 bg-brand-500/10 rounded-full animate-ping"></div>
+              <div className="absolute w-24 h-24 bg-brand-500/20 rounded-full animate-pulse"></div>
+              
+              {/* Main Circle with Border */}
+              <div className="relative w-20 h-20 rounded-full border-4 border-brand-500 bg-brand-50 flex items-center justify-center shadow-lg">
+                  <span className="text-brand-600 font-bold text-3xl">P</span>
+              </div>
+          </div>
+
+          <div className="mt-12 text-center px-8 max-w-xs">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                  Your spot holder has accepted the job. We are confirming everything for you.
+              </p>
+          </div>
+
+          <div className="absolute bottom-8 w-full px-4">
+               <Button fullWidth onClick={() => setAppState(AppState.BOOKING_REVIEW)}>
+                   Cancel
+               </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // 6. ACTIVE BOOKING / PROFILE FLOW
+    if (appState === AppState.WAITING_FOR_PARKER || appState === AppState.PROFILE) {
+        // --- PROFILE VIEW (Active) ---
+        const renderProfileView = () => (
+            <div className="h-full bg-white flex flex-col font-sans">
+                <header className="flex items-center bg-white p-4 pb-2 justify-between flex-none">
+                   <button onClick={() => setBottomNavTab('find')} className="text-[#111418] flex size-12 shrink-0 items-center">
+                      <ChevronLeft className="w-6 h-6" />
+                   </button>
+                   <h2 className="text-[#111418] text-lg font-bold leading-tight flex-1 text-center pr-12">Profile</h2>
+                </header>
+                
+                <main className="flex-1 overflow-y-auto pb-24">
+                   <div className="flex flex-col items-center p-6 pb-2">
+                       <div 
+                          className="w-32 h-32 rounded-full bg-center bg-cover mb-4 shadow-md"
+                          style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBYOI0IICc1sAGt-H_0Wo8lZb7o0uenClFoyBOZpM0LslX8S1IFunBiRSQxrKSGZwGUH54TScyJs157FmB8BW4npwDghV5hBA97TCLx9w6yB5AfinWbSBn9_OLN0ofLOZ1O36pFGbb1LJ6RtdPE9HglR7lLaV4eCpLSLgET8YCbtNThMgEZ4fXDhLHvr9yGzkanqNdn-kJZ7OXB-ORKoBAZhiOBR3ma6DCLRNvXcDKpjofqjNF47oE0JYhFJiTNplfogy8CNx4Acg")' }}
+                       />
+                       <h3 className="text-2xl font-bold text-gray-900">Ethan Carter</h3>
+                       <p className="text-brand-600">Member since 2021</p>
+                   </div>
+
+                   <h3 className="text-lg font-bold px-4 pt-4 pb-2">Account</h3>
+                   <div className="px-4 space-y-1">
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Personal Information</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Payment Methods</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Vehicles</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                   </div>
+
+                   <h3 className="text-lg font-bold px-4 pt-4 pb-2">Activity</h3>
+                   <div className="px-4 space-y-1">
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Parking History</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Reviews</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                   </div>
+
+                   <h3 className="text-lg font-bold px-4 pt-4 pb-2">Settings</h3>
+                   <div className="px-4 space-y-1">
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Notifications</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Privacy</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button className="flex w-full items-center justify-between p-4 bg-white hover:bg-gray-50 border-b border-gray-100">
+                         <span>Help</span>
+                         <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                   </div>
+                </main>
+            </div>
+        );
+
+        // --- ACTIVE BOOKING (Details View) ---
+        const renderActiveBookingDetails = () => (
+            <div className="flex flex-col h-full bg-white font-sans">
+               <div className="flex items-center bg-white p-4 pb-2 justify-between flex-none">
+                  <button onClick={() => {}} className="text-[#111418] flex size-12 shrink-0 items-center">
+                     <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <h2 className="text-[#111418] text-lg font-bold leading-tight flex-1 text-center pr-12">Booking Details</h2>
+               </div>
+
+               <div className="flex-1 overflow-y-auto pb-24">
+                   <div className="flex px-4 py-3">
+                      <div className="w-full h-48 rounded-xl overflow-hidden relative shadow-md">
+                         <img 
+                           src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzCWlho9gZR3_k1OLAlNGo3lkH-6Sv7XLDnVFg20SZnxKSawVXZzi_7YI_Zg0KBGV7WKjATnL7J-3Moj-s5plr53C44goq0BWGvyju80VQbzvvrKtrSqxChgGlzYI_VFrHHrixy59A33v09YqJ2SIR3hHDhBxWXsmcqmzkZOaVc5TTzA8KgcnZY6OCCCQ7tW0Uq9Lzit0_7MXr90sC_BPVOvmOxzGKEgMbbINnn48CcnWZ0EmdDJHln5ym4lA-GFOxsX0HoJt27AqK" 
+                           alt="Map Location" 
+                           className="w-full h-full object-cover"
+                         />
+                      </div>
+                   </div>
+
+                   <div className="mx-4 mt-2 rounded-xl bg-gray-50 p-4 shadow-sm border border-brand-100">
+                      <h2 className="text-brand-600 text-2xl font-extrabold pb-2">Booking Accepted</h2>
+                      <p className="text-[#111418] text-base font-medium leading-normal">Spot Holder's Profile Name</p>
+                      <p className="text-[#111418] text-base font-normal leading-normal pt-2">
+                         Once the parker arrives at the spot, we'll connect via location services, and you'll have <span className="font-bold">30 minutes</span> to arrive at the spot.
+                      </p>
+                   </div>
+
+                   <div className="mx-4 mt-4 space-y-4">
+                      <div className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 shadow-sm min-h-[72px]">
+                         <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                            <MapPin className="w-6 h-6" />
+                         </div>
+                         <div className="flex flex-col justify-center">
+                            <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Spot Location</p>
+                            <p className="text-[#60758a] text-sm font-normal leading-normal line-clamp-2">{selectedSpot?.location.address}</p>
+                         </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 shadow-sm min-h-[72px]">
+                         <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                            <CircleDollarSign className="w-6 h-6" />
+                         </div>
+                         <div className="flex flex-col justify-center">
+                            <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Total Cost</p>
+                            <p className="text-[#60758a] text-sm font-normal leading-normal line-clamp-2">
+                               ${selectedSpot?.isVirtual ? selectedTier.price.toFixed(2) : selectedSpot?.price.toFixed(2)}
+                            </p>
+                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 shadow-sm min-h-[72px]">
+                         <div className="text-[#111418] flex items-center justify-center rounded-lg bg-white shrink-0 size-12 shadow-sm">
+                            <Calendar className="w-6 h-6" />
+                         </div>
+                         <div className="flex flex-col justify-center">
+                            <p className="text-[#111418] text-base font-medium leading-normal line-clamp-1">Booking Time</p>
+                            <p className="text-brand-600 font-bold line-clamp-2">ASAP</p>
+                         </div>
+                      </div>
+                      
+                      <Button fullWidth onClick={handleCancelBooking} className="bg-gray-200 text-gray-800 hover:bg-gray-300">
+                         Cancel Booking
+                      </Button>
+                   </div>
+               </div>
+            </div>
+        );
+
+        return (
+            <div className="h-full w-full bg-white flex flex-col font-sans relative overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
+                    {bottomNavTab === 'find' && renderActiveBookingDetails()}
+                    {bottomNavTab === 'profile' && renderProfileView()}
+                    {bottomNavTab === 'car' && (
+                        <div className="p-8 text-center text-gray-500 mt-20">My Car View Placeholder</div>
+                    )}
+                    {bottomNavTab === 'history' && (
+                        <div className="p-8 text-center text-gray-500 mt-20">History View Placeholder</div>
+                    )}
+                </div>
+
+                {/* BOTTOM NAVIGATION BAR */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 h-[80px] grid grid-cols-4 items-center justify-items-center z-50 flex-none">
+                    <button 
+                       onClick={() => handleBottomNavChange('find')}
+                       className={`flex h-full w-full flex-col items-center justify-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-[#60758a] hover:text-brand-600'}`}
+                    >
+                       <MapPin className="w-7 h-7" />
+                       <span className="text-xs font-medium leading-tight">Find parking</span>
+                    </button>
+                    <button 
+                       onClick={() => handleBottomNavChange('car')}
+                       className={`flex h-full w-full flex-col items-center justify-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-[#60758a] hover:text-brand-600'}`}
+                    >
+                       <Car className="w-7 h-7" />
+                       <span className="text-xs font-medium leading-tight">My car</span>
+                    </button>
+                    <button 
+                       onClick={() => handleBottomNavChange('history')}
+                       className={`flex h-full w-full flex-col items-center justify-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-[#60758a] hover:text-brand-600'}`}
+                    >
+                       <Clock className="w-7 h-7" />
+                       <span className="text-xs font-medium leading-tight">History</span>
+                    </button>
+                    <button 
+                       onClick={() => handleBottomNavChange('profile')}
+                       className={`flex h-full w-full flex-col items-center justify-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-[#111418] hover:text-brand-600'}`}
+                    >
+                       <UserIcon className="w-7 h-7" />
+                       <span className="text-xs font-medium leading-tight relative">
+                           Profile
+                           {bottomNavTab === 'profile' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4/5 h-[2px] bg-brand-600 rounded-full"></span>}
+                       </span>
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     // --- CONTRACTOR DASHBOARD ---
@@ -476,7 +1000,10 @@ const App: React.FC = () => {
 
                 {/* Contractor Bottom Nav */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 h-[80px] grid grid-cols-4 items-center justify-items-center z-50 flex-none">
-                     <button className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-600">
+                     <button 
+                        onClick={() => setAppState(AppState.CONTRACTOR_DASHBOARD)}
+                        className="flex h-full w-full flex-col items-center justify-center gap-1 text-brand-600"
+                     >
                         <Home className="w-6 h-6 fill-current" />
                         <span className="text-[10px] font-bold">Home</span>
                      </button>
@@ -719,441 +1246,313 @@ const App: React.FC = () => {
     if (appState === AppState.CONTRACTOR_TERMS) return renderContractorSubPage('Terms of Service');
     if (appState === AppState.CONTRACTOR_PRIVACY) return renderContractorSubPage('Privacy Policy');
 
-    // --- CONSUMER VIEW ---
-    const isConsumer = !appState.toString().startsWith('CONTRACTOR') && appState !== AppState.LOGIN;
-
-    if (isConsumer) {
+    // MAP VIEW (Consumer) - Main Interactive Logic
+    if (
+      appState === AppState.MAP_IDLE ||
+      appState === AppState.SEARCHING ||
+      appState === AppState.SPOT_SELECTED ||
+      appState === AppState.NAVIGATING ||
+      appState === AppState.ARRIVED
+    ) {
       return (
-        <div className="h-full w-full relative flex flex-col font-sans overflow-hidden bg-white">
-          {/* Map Layer - Always present for consumer to maintain state/context */}
-          <div className={`absolute inset-0 z-0 ${appState === AppState.SEARCHING ? 'invisible' : 'visible'}`}>
-             <Map
-               center={center}
-               spots={spots}
-               selectedSpotId={selectedSpot?.id}
-               onSpotClick={handleSpotClick}
-               onMapClick={handleMapClick}
-               isInteracting={appState === AppState.MAP_IDLE}
-             />
+        <div className="h-full w-full relative bg-gray-50 overflow-hidden flex flex-col">
+          {/* Map Layer - Always rendered in background for transitions */}
+          <div className={`absolute inset-0 z-0 transition-opacity duration-500 ${appState === AppState.SEARCHING ? 'opacity-0 hidden' : 'opacity-100'}`}>
+            <Map 
+                center={center} 
+                spots={spots} 
+                selectedSpotId={selectedSpot?.id}
+                onSpotClick={handleSpotClick}
+                onMapClick={handleMapClick}
+                isInteracting={false}
+            />
           </div>
 
-          {/* Top Search Bar - Visible in MAP_IDLE */}
-          {appState === AppState.MAP_IDLE && (
-            <div className="absolute top-0 left-0 right-0 p-4 z-10 bg-gradient-to-b from-white/90 to-transparent pb-8">
-               <div className="shadow-lg rounded-xl">
-                 <button
-                   onClick={handleSearchFocus}
-                   className="w-full h-14 bg-white rounded-xl flex items-center px-4 shadow-sm border border-gray-100"
-                 >
-                   <Search className="w-5 h-5 text-gray-400 mr-3" />
-                   <span className="text-gray-500 font-medium text-base">Where to?</span>
-                 </button>
-               </div>
+          {/* Top Header Layer (Menu & Status) */}
+          <div className="absolute top-0 left-0 right-0 z-10 p-4 pointer-events-none">
+            <div className="pointer-events-auto flex items-center justify-between gap-3">
+                {appState === AppState.SEARCHING ? null : (
+                   <>
+                    {/* Left Button */}
+                    {appState === AppState.MAP_IDLE || appState === AppState.SPOT_SELECTED ? (
+                      <button onClick={() => setIsMenuOpen(true)} className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors">
+                        <Menu className="w-6 h-6" />
+                      </button>
+                    ) : (
+                      <button onClick={handleReset} className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors">
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                    )}
+                    
+                    {appState === AppState.NAVIGATING && (
+                        <div className="bg-green-600 text-white px-4 py-2 rounded-full shadow-lg font-medium flex items-center">
+                          <Navigation className="w-4 h-4 mr-2" />
+                          Head to your spot
+                        </div>
+                    )}
+                    
+                    {/* Location Indicator (Idle) */}
+                    {(appState === AppState.MAP_IDLE || appState === AppState.SPOT_SELECTED) && (
+                        <div className="bg-white px-4 py-2 rounded-full shadow-lg font-medium text-brand-600 flex items-center">
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                            North Dallas
+                        </div>
+                    )}
+                   </>
+                )}
+            </div>
+          </div>
 
-               {/* Quick filters / Tabs */}
-               <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-                 <button className="px-4 py-2 bg-brand-500 text-white rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
-                   Nearby
-                 </button>
-                 <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
-                   Recent
-                 </button>
-                 <button className="px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-semibold shadow-md whitespace-nowrap">
-                   Cheap
-                 </button>
-               </div>
+          {/* Side Menu */}
+          {isMenuOpen && (
+            <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsMenuOpen(false)}>
+              <div className="absolute top-0 left-0 bottom-0 w-3/4 max-w-xs bg-white shadow-2xl p-6 flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 border border-gray-200">
+                    <UserIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900">{user?.name}</h3>
+                    <p className="text-sm text-gray-500">5.0 ★ Rating</p>
+                  </div>
+                </div>
+                <nav className="space-y-2 flex-1">
+                  <button className="flex items-center w-full p-3 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-gray-700 font-medium transition-colors">
+                    <Clock className="w-5 h-5 mr-3" /> My Bookings
+                  </button>
+                  <button className="flex items-center w-full p-3 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-gray-700 font-medium transition-colors">
+                    <ShieldCheck className="w-5 h-5 mr-3" /> Safety
+                  </button>
+                </nav>
+                <div className="pt-6 border-t border-gray-100">
+                   <p className="text-xs text-gray-400 mb-4">Parkr Valet v1.0.0 (Demo)</p>
+                   <Button variant="outline" fullWidth onClick={() => setAppState(AppState.LOGIN)}>Log Out</Button>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Searching Overlay */}
-          {appState === AppState.SEARCHING && (
-            <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col">
-              <div className="p-4 bg-white shadow-sm border-b border-gray-100 flex items-center gap-2">
-                 <button onClick={handleBackToMap} className="p-2 -ml-2 text-gray-600 rounded-full hover:bg-gray-100">
-                    <ArrowLeft className="w-6 h-6" />
-                 </button>
-                 <SearchInput
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search destination..."
-                    autoFocus
-                 />
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                 {searchQuery.length > 0 ? (
-                    <div className="space-y-2">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Search Results</h3>
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {[...MOCK_BUSINESSES, ...POPULAR_LOCATIONS]
-                                .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.address?.toLowerCase().includes(searchQuery.toLowerCase()))
-                                .map((loc, idx) => (
-                                <LocationItem
-                                    key={`search_${idx}`}
-                                    name={loc.name}
-                                    address={loc.address || ''}
-                                    onClick={() => handleLocationSelect(loc)}
-                                    icon={MOCK_BUSINESSES.some(b => b.name === loc.name) ? <Briefcase className="w-5 h-5" /> : undefined}
-                                />
-                            ))}
-                            {[...MOCK_BUSINESSES, ...POPULAR_LOCATIONS]
-                                .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.address?.toLowerCase().includes(searchQuery.toLowerCase()))
-                                .length === 0 && (
-                                    <div className="p-4 text-center text-gray-500 text-sm">No results found</div>
-                                )
-                            }
-                        </div>
+          {/* Main Interactive Layer */}
+          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex flex-col justify-end h-full">
+            
+            {/* IDLE STATE: Search Bar & Tabs */}
+            {appState === AppState.MAP_IDLE && (
+              <>
+                 {/* Floating Search Bar */}
+                 <div className="pointer-events-auto px-4 pb-4 w-full max-w-md mx-auto">
+                   <SearchInput 
+                     value={searchQuery} 
+                     onChange={setSearchQuery} 
+                     onFocus={handleSearchFocus}
+                     placeholder="Search restaurants, shops..."
+                   />
+                 </div>
+
+                 {/* Bottom Sheet Tabs */}
+                 <div className="pointer-events-auto bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col max-h-[40vh]">
+                    <div className="flex border-b border-gray-100">
+                       <button 
+                          onClick={() => setActiveTab('nearby')}
+                          className={`flex-1 py-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'nearby' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                       >
+                          Nearby Spots
+                       </button>
+                       <button 
+                          onClick={() => setActiveTab('popular')}
+                          className={`flex-1 py-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'popular' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                       >
+                          Popular Locations
+                       </button>
                     </div>
-                 ) : (
-                    <>
-                        <div className="space-y-2">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Nearby Businesses</h3>
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {MOCK_BUSINESSES.map((loc, idx) => (
-                                <LocationItem
-                                    key={`bus_${idx}`}
-                                    name={loc.name}
-                                    address={loc.address}
-                                    onClick={() => handleLocationSelect(loc)}
-                                    icon={<Briefcase className="w-5 h-5" />}
-                                />
-                            ))}
-                            </div>
-                        </div>
+                    
+                    <div className="overflow-y-auto p-4 bg-gray-50/50">
+                       {activeTab === 'nearby' ? (
+                          <div className="space-y-2">
+                             {spots.map(spot => (
+                                <div 
+                                  key={spot.id} 
+                                  onClick={() => handleSpotClick(spot)}
+                                  className="flex items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-brand-200 cursor-pointer transition-colors"
+                                >
+                                   <div className="w-10 h-10 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 font-bold text-xs shrink-0 mr-3">
+                                      P
+                                   </div>
+                                   <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-900 text-sm">{spot.location.address}</h4>
+                                      <p className="text-xs text-gray-500">{spot.status === SpotStatus.HELD_BY_PARKER ? 'Held by Parker' : 'Open Spot'}</p>
+                                   </div>
+                                   <span className="font-bold text-gray-900">${spot.price}</span>
+                                </div>
+                             ))}
+                          </div>
+                       ) : (
+                          <div className="space-y-2">
+                             {POPULAR_LOCATIONS.map((loc, idx) => (
+                                <div 
+                                  key={idx}
+                                  onClick={() => handleLocationSelect(loc)}
+                                  className="flex items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-brand-200 cursor-pointer transition-colors"
+                                >
+                                   <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600 shrink-0 mr-3">
+                                      <MapPin className="w-5 h-5" />
+                                   </div>
+                                   <div>
+                                      <h4 className="font-semibold text-gray-900 text-sm">{loc.name}</h4>
+                                      <p className="text-xs text-gray-500">{loc.address}</p>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              </>
+            )}
 
-                        <div className="space-y-2">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide px-2">Popular Destinations</h3>
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {POPULAR_LOCATIONS.map((loc, idx) => (
-                                <LocationItem
-                                    key={`pop_${idx}`}
-                                    name={loc.name}
-                                    address={loc.address}
-                                    onClick={() => handleLocationSelect(loc)}
-                                />
+            {/* FULL SCREEN SEARCH */}
+            {appState === AppState.SEARCHING && (
+              <div className="pointer-events-auto bg-white h-full flex flex-col animate-in slide-in-from-bottom-10 duration-300">
+                 <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                    <button onClick={handleBackToMap} className="p-2 hover:bg-gray-100 rounded-full">
+                       <ChevronLeft className="w-6 h-6 text-gray-500" />
+                    </button>
+                    <div className="flex-1">
+                       <input
+                         autoFocus
+                         className="w-full text-lg font-medium placeholder-gray-400 outline-none"
+                         placeholder="Search restaurants, shops..."
+                         value={searchQuery}
+                         onChange={(e) => setSearchQuery(e.target.value)}
+                       />
+                    </div>
+                 </div>
+                 <div className="flex-1 overflow-y-auto bg-gray-50">
+                   <div className="p-4">
+                     {searchQuery.length > 0 && (
+                       <>
+                          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Businesses</h3>
+                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                            {MOCK_BUSINESSES.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase())).map((biz, idx) => (
+                              <LocationItem 
+                                key={idx}
+                                name={biz.name}
+                                address={biz.address}
+                                onClick={() => handleLocationSelect(biz)}
+                              />
                             ))}
-                            </div>
-                        </div>
-                    </>
-                 )}
+                            {MOCK_BUSINESSES.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                              <div className="p-4 text-gray-400 text-sm text-center">No results found</div>
+                            )}
+                          </div>
+                       </>
+                     )}
+
+                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Popular Areas</h3>
+                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                        {POPULAR_LOCATIONS.map((loc, idx) => (
+                            <LocationItem 
+                              key={idx}
+                              name={loc.name}
+                              address={loc.address}
+                              onClick={() => handleLocationSelect(loc)}
+                            />
+                        ))}
+                     </div>
+                   </div>
+                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Spot Selected Bottom Sheet */}
-          {appState === AppState.SPOT_SELECTED && selectedSpot && (
-             <div className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 pb-8 animate-in slide-in-from-bottom duration-300">
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-
-                <div className="flex justify-between items-start mb-6">
+            {/* SPOT SELECTED BOTTOM SHEET */}
+            {appState === AppState.SPOT_SELECTED && selectedSpot && (
+              <div className="pointer-events-auto bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 pb-8 animate-in slide-in-from-bottom-20 duration-500">
+                 <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                 
+                 <div className="flex justify-between items-start mb-6">
                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedSpot.location.address}</h2>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">OPEN</span>
-                        <span>•</span>
-                        <span>3 min walk</span>
-                      </div>
-                   </div>
-                   <div className="flex flex-col items-end">
-                      <span className="text-2xl font-bold text-brand-600">${selectedSpot.price}</span>
-                      <span className="text-xs text-gray-400">total</span>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                      <div className="flex items-center gap-2 mb-1 text-gray-500">
-                         <ShieldCheck className="w-4 h-4" />
-                         <span className="text-xs font-bold">Verified</span>
-                      </div>
-                      <p className="text-xs text-gray-600 leading-tight">Spot verified by community.</p>
-                   </div>
-                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                       <div className="flex items-center gap-2 mb-1 text-gray-500">
-                         <Car className="w-4 h-4" />
-                         <span className="text-xs font-bold">Spacious</span>
-                      </div>
-                      <p className="text-xs text-gray-600 leading-tight">Fits SUVs and trucks.</p>
-                   </div>
-                </div>
-
-                <Button onClick={handleContinueToCar} fullWidth>
-                   Park Here
-                </Button>
-             </div>
-          )}
-
-          {/* Vehicle Selection */}
-          {appState === AppState.SELECT_VEHICLE && (
-             <div className="absolute inset-0 z-50 bg-white flex flex-col">
-                <header className="flex items-center p-4 border-b border-gray-100">
-                   <button onClick={() => setAppState(AppState.SPOT_SELECTED)} className="p-2 -ml-2 text-gray-600">
-                      <ArrowLeft className="w-6 h-6" />
-                   </button>
-                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Select Vehicle</h1>
-                </header>
-                <div className="p-4 space-y-3">
-                   {MOCK_VEHICLES.map(v => (
-                      <button
-                        key={v.id}
-                        onClick={() => handleVehicleSelection(v.id)}
-                        className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all ${selectedVehicleId === v.id ? 'border-brand-500 bg-brand-50' : 'border-gray-100 bg-white'}`}
-                      >
-                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedVehicleId === v.id ? 'border-brand-500' : 'border-gray-300'}`}>
-                            {selectedVehicleId === v.id && <div className="w-3 h-3 rounded-full bg-brand-500"></div>}
-                         </div>
-                         <div className="text-left">
-                            <p className="font-bold text-gray-900">{v.make} {v.model}</p>
-                            <p className="text-sm text-gray-500">{v.licensePlate}</p>
-                         </div>
-                      </button>
-                   ))}
-
-                   <button className="w-full p-4 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium flex items-center justify-center gap-2 hover:bg-gray-50">
-                      <Plus className="w-5 h-5" /> Add New Vehicle
-                   </button>
-                </div>
-                <div className="mt-auto p-4 border-t border-gray-100">
-                   <Button onClick={handleVehicleConfirm} fullWidth>Continue</Button>
-                </div>
-             </div>
-          )}
-
-          {/* Tier Selection */}
-          {appState === AppState.SELECT_TIER && (
-             <div className="absolute inset-0 z-50 bg-white flex flex-col">
-                <header className="flex items-center p-4 border-b border-gray-100">
-                   <button onClick={() => setAppState(AppState.SELECT_VEHICLE)} className="p-2 -ml-2 text-gray-600">
-                      <ArrowLeft className="w-6 h-6" />
-                   </button>
-                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Choose Tier</h1>
-                </header>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                   {PARKING_TIERS.map(tier => (
-                      <button
-                        key={tier.id}
-                        onClick={() => handleTierSelect(tier)}
-                        className={`w-full p-5 rounded-2xl border-2 flex flex-col gap-3 transition-all relative overflow-hidden ${selectedTier.id === tier.id ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-100 bg-white'}`}
-                      >
-                         <div className="flex justify-between items-start w-full">
-                            <div className="flex items-center gap-3">
-                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedTier.id === tier.id ? 'bg-white' : 'bg-gray-100'}`}>
-                                  {tier.id === 'vip' ? <Award className="w-5 h-5 text-amber-500" /> : <Car className="w-5 h-5 text-gray-600" />}
-                               </div>
-                               <div className="text-left">
-                                  <h3 className={`font-bold text-lg ${tier.color}`}>{tier.name}</h3>
-                               </div>
-                            </div>
-                            <div className="text-right">
-                               <span className="block text-xl font-bold text-gray-900">${tier.price}</span>
-                            </div>
-                         </div>
-                         <p className="text-left text-sm text-gray-600 leading-relaxed">{tier.description}</p>
-                         {selectedTier.id === tier.id && (
-                            <div className="absolute top-0 right-0 p-2 bg-brand-500 rounded-bl-xl text-white">
-                               <Check className="w-4 h-4" />
-                            </div>
-                         )}
-                      </button>
-                   ))}
-                </div>
-                <div className="mt-auto p-4 border-t border-gray-100">
-                   <Button onClick={handleTierContinue} fullWidth>Select {selectedTier.name}</Button>
-                </div>
-             </div>
-          )}
-
-          {/* Booking Review */}
-          {appState === AppState.BOOKING_REVIEW && selectedSpot && (
-             <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col">
-                <header className="flex items-center p-4 bg-white border-b border-gray-100">
-                   <button onClick={() => setAppState(selectedSpot.isVirtual ? AppState.SELECT_TIER : AppState.SELECT_VEHICLE)} className="p-2 -ml-2 text-gray-600">
-                      <ArrowLeft className="w-6 h-6" />
-                   </button>
-                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Review Booking</h1>
-                </header>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                   {/* Summary Card */}
-                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
-                         <div className="w-14 h-14 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 shrink-0">
-                            <MapPin className="w-7 h-7" />
-                         </div>
-                         <div>
-                            <h3 className="font-bold text-gray-900 text-lg">{selectedSpot.location.address}</h3>
-                            <p className="text-gray-500 text-sm">Today, 2:00 PM - 4:00 PM</p>
-                         </div>
-                      </div>
-
-                      <div className="space-y-3">
-                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Vehicle</span>
-                            <span className="font-semibold text-gray-900">{MOCK_VEHICLES.find(v => v.id === selectedVehicleId)?.model}</span>
-                         </div>
-                         {selectedSpot.isVirtual && (
-                            <div className="flex justify-between text-sm">
-                               <span className="text-gray-500">Service Tier</span>
-                               <span className={`font-semibold ${selectedTier.color}`}>{selectedTier.name}</span>
-                            </div>
-                         )}
-                         <div className="flex justify-between text-sm pt-2 border-t border-dashed border-gray-200">
-                            <span className="text-gray-500">Total Price</span>
-                            <span className="font-bold text-gray-900 text-lg">${selectedSpot.isVirtual ? selectedTier.price : selectedSpot.price}</span>
-                         </div>
-                      </div>
-                   </div>
-
-                   <div className="bg-blue-50 p-4 rounded-xl flex gap-3 items-start">
-                      <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                      <p className="text-sm text-blue-700 leading-relaxed">
-                         Free cancellation up to 15 mins before arrival. You will only be charged after you park.
+                      <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                        {selectedSpot.isVirtual ? 'Park Here' : (selectedSpot.status === SpotStatus.HELD_BY_PARKER ? 'Spot Held by Parker' : 'Open Spot')}
+                      </h2>
+                      <p className="text-gray-500 flex items-center">
+                        <MapPin className="w-4 h-4 mr-1" /> {selectedSpot.location.address}
                       </p>
                    </div>
-                </div>
-
-                <div className="mt-auto p-4 bg-white border-t border-gray-100">
-                   <Button onClick={handleReviewConfirm} fullWidth>Confirm & Pay</Button>
-                </div>
-             </div>
-          )}
-
-           {/* Payment Methods */}
-           {appState === AppState.PAYMENT_METHODS && (
-             <div className="absolute inset-0 z-50 bg-white flex flex-col">
-                <header className="flex items-center p-4 border-b border-gray-100">
-                   <button onClick={() => setAppState(AppState.BOOKING_REVIEW)} className="p-2 -ml-2 text-gray-600">
-                      <ArrowLeft className="w-6 h-6" />
-                   </button>
-                   <h1 className="text-lg font-bold flex-1 text-center pr-10">Payment</h1>
-                </header>
-                <div className="p-4 space-y-4">
-                    <button
-                       onClick={() => setSelectedPaymentMethod('card_1')}
-                       className={`w-full p-4 rounded-xl border flex items-center gap-4 ${selectedPaymentMethod === 'card_1' ? 'border-brand-500 bg-brand-50' : 'border-gray-200'}`}
-                    >
-                       <div className="w-10 h-6 bg-gray-800 rounded flex items-center justify-center text-white text-[8px]">CARD</div>
-                       <div className="text-left flex-1">
-                          <p className="font-bold text-gray-900">Visa •••• 4242</p>
-                       </div>
-                       {selectedPaymentMethod === 'card_1' && <Check className="w-5 h-5 text-brand-600" />}
-                    </button>
-
-                     <button
-                       onClick={() => setSelectedPaymentMethod('apple_pay')}
-                       className={`w-full p-4 rounded-xl border flex items-center gap-4 ${selectedPaymentMethod === 'apple_pay' ? 'border-brand-500 bg-brand-50' : 'border-gray-200'}`}
-                    >
-                       <div className="w-10 h-6 bg-black rounded flex items-center justify-center text-white text-[10px] font-bold">Pay</div>
-                       <div className="text-left flex-1">
-                          <p className="font-bold text-gray-900">Apple Pay</p>
-                       </div>
-                       {selectedPaymentMethod === 'apple_pay' && <Check className="w-5 h-5 text-brand-600" />}
-                    </button>
-                </div>
-                 <div className="mt-auto p-4 border-t border-gray-100">
-                   <Button onClick={handlePaymentContinue} fullWidth>Pay Now</Button>
-                </div>
-             </div>
-           )}
-
-           {/* Searching Parker / Loading */}
-           {appState === AppState.SEARCHING_PARKER && (
-              <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
-                 <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                    <Search className="w-8 h-8 text-brand-600" />
+                   
+                   {!selectedSpot.isVirtual && (
+                    <div className="bg-gray-900 px-3 py-1.5 rounded-lg">
+                        <span className="text-xl font-bold text-white">${selectedSpot.price}</span>
+                    </div>
+                   )}
                  </div>
-                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Finalizing Booking...</h2>
-                 <p className="text-gray-500">Connecting you with the spot...</p>
+
+                 {!selectedSpot.isVirtual && selectedSpot.parkerName && (
+                   <div className="flex items-center gap-3 bg-brand-50 p-4 rounded-xl mb-6 border border-brand-100">
+                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border-2 border-brand-200 shadow-sm">
+                         <UserIcon className="w-6 h-6 text-brand-600" />
+                      </div>
+                      <div>
+                         <p className="text-sm text-brand-900 font-bold">Held by {selectedSpot.parkerName}</p>
+                         <p className="text-xs text-brand-600">{selectedSpot.rating} ★ • {selectedSpot.carModel}</p>
+                      </div>
+                      <div className="ml-auto bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+                         VERIFIED
+                      </div>
+                   </div>
+                 )}
+
+                 <div className="grid grid-cols-2 gap-3 mb-6">
+                    <button className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-brand-500 bg-brand-50 text-brand-700 relative overflow-hidden transition-transform active:scale-[0.98]">
+                       <div className="absolute top-0 right-0 bg-brand-500 text-white text-[10px] px-2 py-0.5 rounded-bl font-bold">FASTEST</div>
+                       <span className="text-lg font-bold">ASAP</span>
+                       <span className="text-xs opacity-75">Connect now</span>
+                    </button>
+                    <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                       <span className="text-lg font-bold">Reserve</span>
+                       <span className="text-xs opacity-75">For later</span>
+                    </button>
+                 </div>
+
+                 <Button 
+                   fullWidth 
+                   size="lg" 
+                   onClick={handleContinueToCar}
+                   className="h-14 text-lg"
+                 >
+                   Continue
+                 </Button>
               </div>
-           )}
+            )}
 
-           {/* Active Booking / Waiting for Parker */}
-           {appState === AppState.WAITING_FOR_PARKER && (
-              <div className="absolute inset-0 z-50 bg-[#f8fafc] flex flex-col font-sans">
-                  {/* Active Booking Header */}
-                  <div className="bg-white p-6 pb-8 rounded-b-3xl shadow-sm border-b border-gray-100 z-10">
-                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-xl font-bold text-gray-900">Active Booking</h1>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">CONFIRMED</span>
+            {/* ARRIVAL STATE */}
+            {appState === AppState.ARRIVED && (
+               <div className="pointer-events-auto bg-white m-4 rounded-2xl shadow-2xl p-8 text-center animate-in zoom-in duration-300">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white">
+                        <ShieldCheck className="w-8 h-8" />
                      </div>
-
-                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-xl bg-gray-200 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=200&q=80")' }}></div>
-                        <div>
-                           <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">Legacy West Garage</h2>
-                           <p className="text-sm text-gray-500">Section B, Level 2</p>
-                        </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">You've Arrived!</h2>
+                  <p className="text-gray-600 mb-8">Exchange complete. The parker has released the spot to you.</p>
+                  
+                  <div className="bg-gray-50 p-4 rounded-xl mb-6 text-left">
+                     <div className="flex justify-between mb-2">
+                        <span className="text-gray-600">Spot Fee</span>
+                        <span className="font-medium">$12.00</span>
                      </div>
-
-                     <div className="grid grid-cols-2 gap-4">
-                        <button className="flex items-center justify-center gap-2 py-3 bg-brand-500 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20">
-                           <Navigation className="w-4 h-4" /> Navigate
-                        </button>
-                        <button className="flex items-center justify-center gap-2 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold">
-                           <Phone className="w-4 h-4" /> Call Help
-                        </button>
+                     <div className="flex justify-between mb-2">
+                        <span className="text-gray-600">Service Fee</span>
+                        <span className="font-medium">$2.50</span>
+                     </div>
+                     <div className="border-t border-gray-200 my-2 pt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>$14.50</span>
                      </div>
                   </div>
 
-                  {/* Booking Details */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Ticket Pass</h3>
-                        <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                           <span className="text-3xl font-bold text-gray-900 tracking-widest mb-1">8492</span>
-                           <span className="text-xs text-gray-500">Show this code at entrance</span>
-                        </div>
-                     </div>
-
-                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                         <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-500">Time Remaining</span>
-                            <span className="text-sm font-bold text-brand-600">1h 58m</span>
-                         </div>
-                         <div className="w-full bg-gray-100 rounded-full h-2">
-                            <div className="bg-brand-500 h-2 rounded-full w-[10%]"></div>
-                         </div>
-                     </div>
-
-                     <button onClick={handleCancelBooking} className="w-full py-4 text-red-500 font-semibold">
-                        Cancel Booking
-                     </button>
-                  </div>
-              </div>
-           )}
-
-           {/* Bottom Navigation - Only on MAP_IDLE */}
-           {appState === AppState.MAP_IDLE && (
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[80px] grid grid-cols-4 items-center justify-items-center z-40 pb-2">
-                 <button
-                    onClick={() => handleBottomNavChange('find')}
-                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'find' ? 'text-brand-600' : 'text-gray-400'}`}
-                 >
-                    <Search className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">Find</span>
-                 </button>
-                 <button
-                    onClick={() => handleBottomNavChange('car')}
-                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'car' ? 'text-brand-600' : 'text-gray-400'}`}
-                 >
-                    <Car className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">My Car</span>
-                 </button>
-                 <button
-                    onClick={() => handleBottomNavChange('history')}
-                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'history' ? 'text-brand-600' : 'text-gray-400'}`}
-                 >
-                    <Clock className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">History</span>
-                 </button>
-                 <button
-                    onClick={() => handleBottomNavChange('profile')}
-                    className={`flex flex-col items-center gap-1 ${bottomNavTab === 'profile' ? 'text-brand-600' : 'text-gray-400'}`}
-                 >
-                    <UserIcon className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">Profile</span>
-                 </button>
-              </div>
-           )}
+                  <Button fullWidth size="lg" onClick={handleReset}>Done</Button>
+               </div>
+            )}
+          </div>
         </div>
       );
     }
