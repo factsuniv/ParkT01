@@ -3,6 +3,7 @@ import { Loader2, ArrowLeft, Search, MapPin, Navigation, Car } from 'lucide-reac
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   fullWidth?: boolean;
 }
@@ -10,13 +11,20 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button: React.FC<ButtonProps> = ({ 
   children, 
   variant = 'primary', 
+  size = 'md',
   isLoading, 
   fullWidth, 
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "relative flex items-center justify-center px-6 py-3.5 text-sm font-semibold transition-all duration-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
+  const baseStyles = "relative flex items-center justify-center font-semibold transition-all duration-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
   
+  const sizeStyles = {
+    sm: "px-4 py-2 text-xs",
+    md: "px-6 py-3.5 text-sm",
+    lg: "px-8 py-4 text-base"
+  };
+
   const variants = {
     primary: "bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/20",
     secondary: "bg-gray-900 hover:bg-gray-800 text-white shadow-lg shadow-gray-900/20",
@@ -26,7 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button 
-      className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={`${baseStyles} ${sizeStyles[size]} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       disabled={isLoading}
       {...props}
     >

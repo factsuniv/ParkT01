@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Map from './components/Map';
 import { Button, SearchInput, LocationItem } from './components/UIComponents';
@@ -976,7 +977,10 @@ const App: React.FC = () => {
                                 </div>
                                 <span className="text-xs font-bold text-gray-700">Add New Spot</span>
                             </button>
-                            <button className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
+                            <button 
+                                onClick={() => setAppState(AppState.CONTRACTOR_TOOLS_PAY)}
+                                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
                                     <CreditCard className="w-5 h-5" />
                                 </div>
@@ -1025,6 +1029,97 @@ const App: React.FC = () => {
                 </div>
             </div>
         );
+    }
+
+    // --- CONTRACTOR TOOLS PAY ---
+    if (appState === AppState.CONTRACTOR_TOOLS_PAY) {
+      return (
+        <div className="h-full w-full bg-[#f5f7f8] flex flex-col font-sans overflow-hidden">
+          <header className="flex items-center justify-between p-4 pt-6 flex-none bg-[#f5f7f8] sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <img 
+                alt="User avatar" 
+                className="h-10 w-10 rounded-full object-cover border border-gray-200" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZOGn8B8EETGrUvzk0_6Im-y21_rPdEo0tuPQBM4DiDbVTnSlAaWlN2pck3HAXdXS1Gy-O4-2DGsKXuEdkgrnvsIoZtEbe0izznjWPIflfnRYLz-zz9FrTEspUVNPyTMl5zHW8aL1KHBGtVJFgQjss8f7Dz1DA04Q4RdnAn1AZFn_zkbjrjYuGdCUXqU9tbvsbv6scrTmsxpdHheWcERyGOLL8iTXlGqlRcy-GzyJ5YZuDj9_KAfpMCm0MjAWhE4IcfM01wxfnMhT3"
+              />
+              <div>
+                <p className="text-sm text-slate-500">Welcome back,</p>
+                <h1 className="text-xl font-bold text-[#0f1923]">Alex Doe</h1>
+              </div>
+            </div>
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/60 backdrop-blur-sm border border-slate-200 hover:bg-white transition-colors">
+              <Bell className="w-5 h-5 text-slate-600" />
+              <div className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-[#f5f7f8]"></div>
+            </button>
+          </header>
+
+          <main className="flex flex-col gap-6 p-4 grow overflow-y-auto">
+            <div>
+                <h2 className="text-2xl font-bold px-1 mt-2 text-[#0f1923]">Upcoming Payments</h2>
+                <div className="relative w-full overflow-hidden rounded-2xl bg-[#359EFF] p-6 text-white shadow-lg shadow-[#359EFF]/30 mt-4">
+                  <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10"></div>
+                  <div className="absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-white/10"></div>
+                  <div className="relative z-10 flex flex-col gap-2">
+                    <p className="text-4xl font-bold">$185.00</p>
+                    <p className="text-xs font-light opacity-80 mt-1">Next Pay Period: 3 days</p>
+                  </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <h3 className="text-lg font-bold px-1 text-[#0f1923]">Itemized Payments</h3>
+              <div className="relative flex flex-col gap-3">
+                 {[
+                    { title: "Frisco The Star Payout", date: "Nov 28, 2024", amount: "6.50" },
+                    { title: "Legacy East Payout", date: "Nov 27, 2024", amount: "8.00" },
+                    { title: "Mi Cocina Parking Fee", date: "Nov 27, 2024", amount: "4.00" },
+                    { title: "Legacy West Payout", date: "Nov 26, 2024", amount: "7.25" },
+                    { title: "Frisco The Star Payout", date: "Nov 25, 2024", amount: "5.50" },
+                    { title: "Mi Cocina Parking Fee", date: "Nov 24, 2024", amount: "4.00" },
+                    { title: "Legacy East Payout", date: "Nov 23, 2024", amount: "7.75" },
+                    { title: "Frisco The Star Payout", date: "Nov 22, 2024", amount: "6.00" },
+                 ].map((item, i) => (
+                    <div key={i} className="rounded-xl bg-white/70 backdrop-blur-md border border-slate-200/60 p-4 shadow-sm flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-base text-[#0f1923]">{item.title}</p>
+                        <p className="text-sm text-slate-500">Paid: {item.date}</p>
+                      </div>
+                      <p className="text-lg font-bold text-[#359EFF]">${item.amount}</p>
+                    </div>
+                 ))}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-4 pt-4 pb-4">
+              <div className="flex justify-center gap-6 mt-2">
+                <button onClick={() => setAppState(AppState.CONTRACTOR_PAYMENT_METHODS)} className="text-sm font-semibold text-[#359EFF] hover:underline cursor-pointer bg-transparent border-none p-0">Manage Payment Methods</button>
+                <button className="text-sm font-semibold text-[#359EFF] hover:underline cursor-pointer bg-transparent border-none p-0">View Past Transactions</button>
+              </div>
+            </div>
+          </main>
+            
+          <footer className="sticky bottom-0 w-full bg-white/70 backdrop-blur-xl border-t border-slate-200 flex-none z-50">
+            <nav className="flex justify-around items-center h-20 px-4 pb-2">
+               <button onClick={() => setAppState(AppState.CONTRACTOR_DASHBOARD)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-[#359EFF] w-16">
+                  <Home className="w-6 h-6" />
+                  <span className="text-xs font-medium">Home</span>
+               </button>
+               <button className="flex flex-col items-center gap-1 text-slate-500 hover:text-[#359EFF] w-16">
+                  <Car className="w-6 h-6" />
+                  <span className="text-xs font-medium">Spots</span>
+               </button>
+               <button className="flex flex-col items-center gap-1 text-[#359EFF] w-16">
+                  <Newspaper className="w-6 h-6 fill-current" />
+                  <span className="text-xs font-bold">News</span>
+               </button>
+               <button onClick={() => setAppState(AppState.CONTRACTOR_ACCOUNT)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-[#359EFF] w-16">
+                  <UserIcon className="w-6 h-6" />
+                  <span className="text-xs font-medium">Account</span>
+               </button>
+            </nav>
+          </footer>
+        </div>
+      );
     }
 
     // --- CONTRACTOR ACCOUNT SETTINGS ---
